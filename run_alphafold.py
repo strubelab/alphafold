@@ -117,6 +117,13 @@ flags.DEFINE_boolean('use_precomputed_msas', False, 'Whether to read MSAs that '
                      'have been written to disk. WARNING: This will not check '
                      'if the sequence, database or configuration have changed.')
 
+
+# Additional flag to be able to set the number of recycles
+flags.DEFINE_integer('recycles', 3, 'Number of times to recycle the outputs '
+                     'through the network. 3 (default) is the recommended number.',
+                     lower_bound=1, upper_bound=12)
+
+
 FLAGS = flags.FLAGS
 
 MAX_TEMPLATE_HITS = 20
@@ -374,8 +381,17 @@ def main(argv):
     model_config = config.model_config(model_name)
     if run_multimer_system:
       model_config.model.num_ensemble_eval = num_ensemble
+      
+      ## Change recycles
+      model_config.model.num_recycle = FLAGS.recycles
+
     else:
       model_config.data.eval.num_ensemble = num_ensemble
+
+      ## Change recycles
+      model_config.data.common.num_recycle = FLAGS.recycles
+      model_config.model.num_recycle = FLAGS.recycles
+
     model_params = data.get_model_haiku_params(
         model_name=model_name, data_dir=FLAGS.data_dir)
     model_runner = model.RunModel(model_config, model_params)
