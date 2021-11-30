@@ -16,9 +16,9 @@ export TF_FORCE_UNIFIED_MEMORY=1
 export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
-fasta_file=$1
-out_dir=$2
-recycles=$3
+fasta_file=WRITE_HERE
+out_dir=WRITE_HERE
+recycles=WRITE_HERE
 
 time python3 ./run_alphafold.py \
  --data_dir=$ALPHAFOLD_DATA \
