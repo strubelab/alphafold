@@ -1,8 +1,29 @@
+#!/usr/bin/env python3
+
+"""
+Run this script to process the alphafold results
+
+
+Usage:
+
+./process_results.py [fasta_file] [af_outputs]
+
+fasta_file: path to the same fasta file that was provided to alphafold
+af_outputs: path to the directory with the outputs from alphafold (the one that
+            contains the pdb files)
+
+For help:
+
+./process_results.py --help
+"""
+
+
 import sys
 import numpy as np
 import pickle
 import re
 import jax
+import argparse
 
 from pathlib import Path
 
@@ -340,12 +361,53 @@ def plot_protein(protein:dict, Ls:list=None, dpi:int=100,
     return fig
 
 
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Input
+    -----
+    args : list
+        List of the arguments to be parsed (only to be used for testing). If
+        none is provided, it is taken from sys.argv
+    """
+
+    def validate_input(input: str) -> Path:
+        """
+        Validate that input is an existing file or directory
+
+        Args:
+            input (str): input file or directory
+
+        """
+        inp = Path(input)
+        if not inp.exists():
+            raise ValueError
+
+        return inp
+
+
+    parser = argparse.ArgumentParser(description=('Program to process the '
+                'outputs from Alphafold and return plots with the pLDDT, PAE, '
+                'predicted contacts, predicted distances, and 2D images of '
+                'protein structure colored by pLDDT.'))
+
+    parser.add_argument("sequence", help=('Fasta file that was provided as '
+        'input to Alphafold.'), type=validate_input)
+
+    parser.add_argument("af_outputs", help=('Directory with the alphafold '
+        'outputs, containing the pdb files.'), type=validate_input)
+
+    return parser.parse_args(args)
+
 
 
 if __name__ == "main":
 
-    fasta_file = Path(sys.argv[1])
-    af_outputs = Path(sys.argv[2])
+    args = parsing()
+    fasta_file = args.sequence
+    af_outputs = args.af_outputs
 
     sequences = list(SeqIO.parse(fasta_file, 'fasta'))
 
