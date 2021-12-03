@@ -24,6 +24,7 @@ import pickle
 import re
 import jax
 import argparse
+import logging
 
 from pathlib import Path
 
@@ -361,6 +362,8 @@ def plot_protein(protein:dict, Ls:list=None, dpi:int=100,
     return fig
 
 
+########## PARSING COMMAND LINE INPUTS
+
 def parsing(args: list=None) -> argparse.Namespace:
     """
     Creates the argument parser instance and applies it to the command line
@@ -403,7 +406,10 @@ def parsing(args: list=None) -> argparse.Namespace:
 
 
 
-if __name__ == "main":
+if __name__ == "__main__":
+
+    logging.basicConfig(format='%(levelname)s:%(message)s',
+                level=logging.INFO)
 
     args = parsing()
     fasta_file = args.sequence
@@ -419,26 +425,32 @@ if __name__ == "main":
     prediction_results, outs, model_rank = (process_outputs(features_files))
 
     # Plot properties
+    logging.info(f'Making directory for plots in {af_outputs}/plots')
     plots_dir = af_outputs / 'plots'
     plots_dir.mkdir()
 
+    logging.info('Plotting PAEs...')
     plot_paes([outs[k]["pae"] for k in model_rank],
                 chain_breaks=chain_breaks, dpi=200,
                 savefile=plots_dir/'pae.png')
 
+    logging.info('Plotting predicted contacts...')
     plot_adjs([outs[k]["adj"] for k in model_rank],
                 chain_breaks=chain_breaks, dpi=200,
                 savefile=plots_dir/'predicted_contacts.png')
 
+    logging.info('Plotting predicted distances...')
     plot_dists([outs[k]["dists"] for k in model_rank],
                 chain_breaks=chain_breaks, dpi=200,
                 savefile=plots_dir/'predicted_distances.png')
 
+    logging.info('Plotting pLDDTs...')
     plot_plddts([outs[k]["plddt"] for k in model_rank],
                 chain_breaks=chain_breaks, dpi=200,
                 savefile=plots_dir/'plddts.png')
 
     # Plot structures
+    logging.info('Drawing proteins in 2D...')
     for i,name in enumerate(model_rank):
         plot_protein(prediction_results[name], chain_breaks)
         plt.suptitle(f'Rank {i+1}: {name}, '
@@ -449,4 +461,5 @@ if __name__ == "main":
         plt.savefig(plots_dir/f'rank_{i+1}_{name}.png', dpi=200)
         plt.close()
         
+    logging.info('Done.')
 
