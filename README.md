@@ -1,8 +1,8 @@
-# Alphafold in ibex
+# AlphaFold in Ibex
 ---
-Follow these steps to run alphafold in ibex:
+Follow these steps to run AlphaFold in Ibex:
 
-1. Login to ibex through your Terminal application (mac) with the command:
+1. Login to Ibex through your Terminal application (mac) with the command:
 
     ```bash
     $ ssh [your_username]@glogin.ibex.kaust.edu.sa
@@ -10,7 +10,7 @@ Follow these steps to run alphafold in ibex:
 
    For logging in on Windows, you need an ssh client application such as [PuTTY](https://www.putty.org/).
 
-2. Go to your scratch directory in ibex:
+2. Go to your scratch directory in Ibex:
 
     ```bash
     $ cd /ibex/scratch/[your_username]/
@@ -54,7 +54,7 @@ Follow these steps to run alphafold in ibex:
     - Exit with `Ctrl+X`
 
 
-6. Submit the script to ibex:
+6. Submit the script to Ibex:
 
     ```bash
     # For modeling monomers
@@ -109,8 +109,8 @@ Follow these steps to run alphafold in ibex:
 
     Where:
 
-    - `fasta_file` is the path to the same fasta file that was submitted to alphafold.
-    - `af_outputs` is the same directory indicated in the previous script that now contains the alphafold outputs.
+    - `fasta_file` is the path to the same fasta file that was submitted to AlphaFold.
+    - `af_outputs` is the same directory indicated in the previous script that now contains the AlphaFold outputs.
 
 
 9. Look for your plots in the directory `[af_outputs]/[sequence_name]/plots`
@@ -126,7 +126,7 @@ Follow these steps to run alphafold in ibex:
 <img src='doc/pyk2/rank_1_model_5_ptm.png'>
 
 
-Note: some times there are discrepancies between the model ranking given by alphafold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both.
+Note: some times there are discrepancies between the model ranking given by AlphaFold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both.
 
 
 ### Predicted aligned error:
@@ -159,7 +159,7 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
 
 ## Troubleshooting / FAQs
 
-- What is ibex?
+- What is Ibex?
 
   Ibex is a computer cluster that you can access to run "jobs" or execute programs that require large amounts of memory, CPU or GPU power. If you want to learn more you can check out the [Ibex training site](https://www.hpc.kaust.edu.sa/ibex/training) or the [user guide](https://www.hpc.kaust.edu.sa/ibex/ibex_guide).
 
@@ -167,9 +167,9 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
 
   If you're not familiar with the use of a Unix terminal/shell, you would greatly benefit from watching this [introductory workshop](https://www.youtube.com/watch?v=QB4JgAVgJHo) by the KAUST Visualization Core Lab, inspired from this [short course](https://swcarpentry.github.io/shell-novice/) by Software Carpentry.
 
-- I don't see my job when typing `squeue -u [my_username]` in ibex, and the output directory is empty/doesn't have all the files with the results.
+- I don't see my job when typing `squeue -u [my_username]` in Ibex, and the output directory is empty/doesn't have all the files with the results.
 
-  If this happens, something might have gone wrong with the Alphafold execution. You should take a look at the file with the standard output from ibex, whose location is indicated by the `#SBATCH -o` parameter in the `run_[monomer|multimer].sbatch` file. The default location is in the `out_ibex` directory, so to look at this file you could do:
+  If this happens, something might have gone wrong with the AlphaFold execution. You should take a look at the file with the standard output from Ibex, whose location is indicated by the `#SBATCH -o` parameter in the `run_[monomer|multimer].sbatch` file. The default location is in the `out_ibex` directory, so to look at this file you could do:
 
   ```bash
   $ tail out_ibex/Alphafold2.[jobid].out
@@ -207,4 +207,4 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
 
 - Why don't I just ask for as many resources as possible to prevent the program from failing?
 
-  If you ask for more resources than your job will need, you might have to wait longer for those resources to become free and be assigned to you. Also you would prevent other users from accessing those resources for as long as your job is running. Remember that ibex is used by many other people :)
+  If you ask for more resources than your job will need, you might have to wait longer for those resources to become free and be assigned to you. Also you would prevent other users from accessing those resources for as long as your job is running. Remember that Ibex is used by many other people :)
