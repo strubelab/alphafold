@@ -414,6 +414,9 @@ if __name__ == "__main__":
     args = parsing()
     fasta_file = args.sequence
     af_outputs = args.af_outputs
+    dpi=200
+
+    af_outputs = af_outputs/fasta_file.stem
 
     sequences = list(SeqIO.parse(fasta_file, 'fasta'))
 
@@ -431,34 +434,34 @@ if __name__ == "__main__":
 
     logging.info('Plotting PAEs...')
     plot_paes([outs[k]["pae"] for k in model_rank],
-                chain_breaks=chain_breaks, dpi=200,
+                chain_breaks=chain_breaks, dpi=dpi,
                 savefile=plots_dir/'pae.png')
 
     logging.info('Plotting predicted contacts...')
     plot_adjs([outs[k]["adj"] for k in model_rank],
-                chain_breaks=chain_breaks, dpi=200,
+                chain_breaks=chain_breaks, dpi=dpi,
                 savefile=plots_dir/'predicted_contacts.png')
 
     logging.info('Plotting predicted distances...')
     plot_dists([outs[k]["dists"] for k in model_rank],
-                chain_breaks=chain_breaks, dpi=200,
+                chain_breaks=chain_breaks, dpi=dpi,
                 savefile=plots_dir/'predicted_distances.png')
 
     logging.info('Plotting pLDDTs...')
     plot_plddts([outs[k]["plddt"] for k in model_rank],
-                chain_breaks=chain_breaks, dpi=200,
+                chain_breaks=chain_breaks, dpi=dpi,
                 savefile=plots_dir/'plddts.png')
 
     # Plot structures
     logging.info('Drawing proteins in 2D...')
     for i,name in enumerate(model_rank):
-        plot_protein(prediction_results[name], chain_breaks)
+        plot_protein(prediction_results[name], chain_breaks, dpi=dpi)
         plt.suptitle(f'Rank {i+1}: {name}, '
                         f'pLDDT={outs[name]["pLDDT"]:.2f}, '
                         f'pTM={outs[name]["pTMscore"]:.2f}')
 
         plt.tight_layout()
-        plt.savefig(plots_dir/f'rank_{i+1}_{name}.png', dpi=200)
+        plt.savefig(plots_dir/f'rank_{i+1}_{name}.png', dpi=dpi)
         plt.close()
         
     logging.info('Done.')

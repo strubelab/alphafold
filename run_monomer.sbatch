@@ -3,7 +3,7 @@
 #SBATCH --partition=batch
 #SBATCH -J AlphaFold2
 #SBATCH -o out_ibex/%x.%j.out
-#SBATCH --time=05:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=16
@@ -17,8 +17,8 @@ export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
 fasta_file=WRITE_HERE
-out_dir=WRITE_HERE
-recycles=WRITE_HERE
+out_dir=output
+recycles=3
 
 time python3 ./run_alphafold.py \
  --data_dir=$ALPHAFOLD_DATA \

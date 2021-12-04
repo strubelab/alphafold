@@ -17,8 +17,8 @@ export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5
 export XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
 fasta_file=WRITE_HERE
-out_dir=WRITE_HERE
-recycles=WRITE_HERE
+out_dir=output
+recycles=3
 
 time python3 ./run_alphafold.py \
  --data_dir=$ALPHAFOLD_DATA \
