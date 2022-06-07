@@ -114,6 +114,7 @@ class Hmmbuild(object):
         cmd.append('--singlemx')
       cmd.extend([
           '--amino',
+          '--cpu', '8', # Use 8 cpus for hhbuild
           output_hmm_path,
           input_query,
       ])

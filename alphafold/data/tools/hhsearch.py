@@ -79,6 +79,7 @@ class HHSearch:
       cmd = [self.binary_path,
              '-i', input_path,
              '-o', hhr_path,
+             '-cpu', '8', # Use 8 cpus for hhsearch
              '-maxseq', str(self.maxseq)
              ] + db_cmd
 
