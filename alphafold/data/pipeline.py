@@ -159,6 +159,7 @@ class DataPipeline:
     input_description = input_descs[0]
     num_res = len(input_sequence)
 
+    # Run jackhmmer on uniref90 and mgnify
     uniref90_out_path = os.path.join(msa_output_dir, 'uniref90_hits.sto')
     jackhmmer_uniref90_result = run_msa_tool(
         msa_runner=self.jackhmmer_uniref90_runner,
@@ -181,6 +182,8 @@ class DataPipeline:
     msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(
         msa_for_templates)
 
+    # Run template searcher
+    # hmmbuild + hmmsearch for multimers, hhsearch for monomers)
     if self.template_searcher.input_format == 'sto':
       pdb_templates_result = self.template_searcher.query(msa_for_templates)
     elif self.template_searcher.input_format == 'a3m':
@@ -202,6 +205,7 @@ class DataPipeline:
         output_string=pdb_templates_result, input_sequence=input_sequence)
 
     if self._use_small_bfd:
+      # Run jackhmmer if _use_small_bfd
       bfd_out_path = os.path.join(msa_output_dir, 'small_bfd_hits.sto')
       jackhmmer_small_bfd_result = run_msa_tool(
           msa_runner=self.jackhmmer_small_bfd_runner,
@@ -211,6 +215,7 @@ class DataPipeline:
           use_precomputed_msas=self.use_precomputed_msas)
       bfd_msa = parsers.parse_stockholm(jackhmmer_small_bfd_result['sto'])
     else:
+      # Run hhblits if not _use_small_bfd
       bfd_out_path = os.path.join(msa_output_dir, 'bfd_uniclust_hits.a3m')
       hhblits_bfd_uniclust_result = run_msa_tool(
           msa_runner=self.hhblits_bfd_uniclust_runner,

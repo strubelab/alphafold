@@ -243,16 +243,20 @@ class DataPipeline:
     """Runs alignment tools on the input sequences and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
+    # Lists with sequences and descriptions from the ID line in fasta files
     input_seqs, input_descs = parsers.parse_fasta(input_fasta_str)
 
+    # Returns a dictionary with {chain_id: _FastaChain(sequence, description)}
     chain_id_map = _make_chain_id_map(sequences=input_seqs,
                                       descriptions=input_descs)
     chain_id_map_path = os.path.join(msa_output_dir, 'chain_id_map.json')
+    # Save the chain ids to a json file as dictionaries
     with open(chain_id_map_path, 'w') as f:
       chain_id_map_dict = {chain_id: dataclasses.asdict(fasta_chain)
                            for chain_id, fasta_chain in chain_id_map.items()}
       json.dump(chain_id_map_dict, f, indent=4, sort_keys=True)
 
+    # Calculate the features for every chain separately, one by one!
     all_chain_features = {}
     sequence_features = {}
     is_homomer_or_monomer = len(set(input_seqs)) == 1
@@ -261,6 +265,7 @@ class DataPipeline:
         all_chain_features[chain_id] = copy.deepcopy(
             sequence_features[fasta_chain.sequence])
         continue
+      # Run the monomer pipeline on a single chain
       chain_features = self._process_single_chain(
           chain_id=chain_id,
           sequence=fasta_chain.sequence,

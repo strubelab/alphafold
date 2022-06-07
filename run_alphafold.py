@@ -124,7 +124,8 @@ flags.DEFINE_boolean('run_relax', True, 'Whether to run the final relaxation '
                      'result in predictions with distracting stereochemical '
                      'violations but might help in case you are having issues '
                      'with the relaxation stage.')
-flags.DEFINE_boolean('use_gpu_relax', None, 'Whether to relax on GPU. '
+                     # Changed it to True by default
+flags.DEFINE_boolean('use_gpu_relax', True, 'Whether to relax on GPU. '
                      'Relax on GPU can be much faster than CPU, so it is '
                      'recommended to enable if possible. GPUs must be available'
                      ' if this setting is enabled.')
@@ -167,6 +168,8 @@ def predict_structure(
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
   timings = {}
+
+  # Creating output directories
   output_dir = os.path.join(output_dir_base, fasta_name)
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -286,12 +289,14 @@ def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
+  # Check arguments for binary paths
   for tool_name in (
       'jackhmmer', 'hhblits', 'hhsearch', 'hmmsearch', 'hmmbuild', 'kalign'):
     if not FLAGS[f'{tool_name}_binary_path'].value:
       raise ValueError(f'Could not find path to the "{tool_name}" binary. Make '
                        'sure it is installed on your system.')
 
+  # Check arguments for the location of databases
   use_small_bfd = FLAGS.db_preset == 'reduced_dbs'
   _check_flag('small_bfd_database_path', 'db_preset',
               should_be_set=use_small_bfd)
@@ -318,6 +323,7 @@ def main(argv):
   if len(fasta_names) != len(set(fasta_names)):
     raise ValueError('All FASTA paths must have a unique basename.')
 
+  # Initialize template searcher and featurizer
   if run_multimer_system:
     template_searcher = hmmsearch.Hmmsearch(
         binary_path=FLAGS.hmmsearch_binary_path,
@@ -342,6 +348,9 @@ def main(argv):
         release_dates_path=None,
         obsolete_pdbs_path=FLAGS.obsolete_pdbs_path)
 
+  # Initialize pipeline for monomer
+  # Initializes the wrappers for jackhmmer(uniref90), hhblits(bfd, uniclust30),
+  # and jackhmmer(mgnify)
   monomer_data_pipeline = pipeline.DataPipeline(
       jackhmmer_binary_path=FLAGS.jackhmmer_binary_path,
       hhblits_binary_path=FLAGS.hhblits_binary_path,
@@ -357,6 +366,8 @@ def main(argv):
 
   if run_multimer_system:
     num_predictions_per_model = FLAGS.num_multimer_predictions_per_model
+    # Initialize pipeline for multimer
+    # Initializes the wrapper for jackhmmer(uniprot)
     data_pipeline = pipeline_multimer.DataPipeline(
         monomer_data_pipeline=monomer_data_pipeline,
         jackhmmer_binary_path=FLAGS.jackhmmer_binary_path,
@@ -366,6 +377,8 @@ def main(argv):
     num_predictions_per_model = 1
     data_pipeline = monomer_data_pipeline
 
+  # Load names of the models to be run according to the chosen preset
+  # Load model configurations and parameters
   model_runners = {}
   model_names = config.MODEL_PRESETS[FLAGS.model_preset]
   for model_name in model_names:
@@ -385,6 +398,8 @@ def main(argv):
 
     model_params = data.get_model_haiku_params(
         model_name=model_name, data_dir=FLAGS.data_dir)
+    # Initialize the model runner instances with their respective configurations
+    # and the `monomer` and `multimer` AlphaFold model
     model_runner = model.RunModel(model_config, model_params)
     for i in range(num_predictions_per_model):
       model_runners[f'{model_name}_pred_{i}'] = model_runner
@@ -392,6 +407,7 @@ def main(argv):
   logging.info('Have %d models: %s', len(model_runners),
                list(model_runners.keys()))
 
+  # Initialize Amber Relaxer
   if FLAGS.run_relax:
     amber_relaxer = relax.AmberRelaxation(
         max_iterations=RELAX_MAX_ITERATIONS,
@@ -432,7 +448,7 @@ if __name__ == '__main__':
       'template_mmcif_dir',
       'max_template_date',
       'obsolete_pdbs_path',
-      'use_gpu_relax',
+      # 'use_gpu_relax',
   ])
 
   app.run(main)
