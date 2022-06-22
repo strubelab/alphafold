@@ -39,6 +39,7 @@ class AlphaFold(Executor):
                  out_dir:Path=None,
                  target_name:str=None,
                  multimer_predictions_per_model:int=5,
+                 use_precomputed_msas:bool=False,
                  **kw):
         """
         Instantiate variables
@@ -83,6 +84,7 @@ class AlphaFold(Executor):
         self.run_relax = run_relax
         self.use_gpu_relax = use_gpu_relax
         self.multimer_predictions_per_model = multimer_predictions_per_model
+        self.use_precomputed_msas = use_precomputed_msas
 
         if len(self.SeqRecs) > 1:
             self.model_preset = 'multimer'
@@ -98,9 +100,11 @@ class AlphaFold(Executor):
         if out_dir is None:
             self.out_dir = Path(f'{self.target_name}')
         else:
-            self.out_dir = out_dir / f'{self.target_name}'
+            self.out_dir = out_dir
         
-        self.fasta_path = self.out_dir / f'{self.target_name}.fasta'
+        self.fasta_path = (self.out_dir /
+                           f'{self.target_name}' /
+                           f'{self.target_name}.fasta')
 
         self.make_args()
 
@@ -138,6 +142,7 @@ class AlphaFold(Executor):
             f'--recycles={self.recycles} '
             f'--run_relax={str(self.run_relax).lower()} '
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
+            f'--use_precomputed_msas={str(self.use_precomputed_msas).lower()} '
         ).split()
 
         if 'multimer' in self.model_preset:
@@ -160,6 +165,9 @@ class AlphaFold(Executor):
         """
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
+
+        if not self.fasta_path.parent.exists():
+            self.fasta_path.mkdir(parents=True)
 
         if not self.fasta_path.exists():
             SeqIO.write(self.SeqRecs, self.fasta_path, 'fasta')

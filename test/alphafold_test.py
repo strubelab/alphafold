@@ -32,12 +32,14 @@ class AlphafoldTest(unittest.TestCase):
         self.run_relax = True
         self.use_gpu_relax = True
         self.multimer_predictions_per_model = 4
+        self.use_precomputed_msas = True
 
         self.fasta_path = self.out_dir / f'{self.SeqRec.name}-1' / f'{self.SeqRec.name}-1.fasta'
 
         self.alphafold = AlphaFold([self.SeqRec],
                             out_dir=self.out_dir, recycles=self.recycles,
-                            keep_tempdir=True)
+                            keep_tempdir=True,
+                            use_precomputed_msas=self.use_precomputed_msas)
 
     def test_command_created(self):
         """
@@ -48,7 +50,7 @@ class AlphafoldTest(unittest.TestCase):
             f'python3 '
             f'{self.ALPHAFOLD_SCRIPT} '
             f'--data_dir={self.ALPHAFOLD_DATA} '
-            f'--output_dir={(self.out_dir / f"{self.SeqRec.name}-1")} '
+            f'--output_dir={self.out_dir} '
             f'--fasta_paths={self.fasta_path} '
             f'--db_preset={self.db_preset} '
             f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
@@ -68,6 +70,7 @@ class AlphafoldTest(unittest.TestCase):
             f'--recycles={self.recycles} '
             f'--run_relax=true '
             f'--use_gpu_relax=true '
+            f'--use_precomputed_msas=true '
             f'--pdb70_database_path={self.ALPHAFOLD_DATA}/pdb70/pdb70 '
         ).split()
 

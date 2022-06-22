@@ -33,6 +33,7 @@ class AlphafoldIbexTest(unittest.TestCase):
         self.recycles=3
         self.run_relax=True
         self.multimer_predictions_per_model = 4
+        self.use_precomputed_msas = True
         self.conda_env = Path(__file__).parent.parent / 'env'
 
         self.jobname = 'AlphafoldIbex_unittest'
@@ -42,7 +43,8 @@ class AlphafoldIbexTest(unittest.TestCase):
         self.alphafoldibex = AlphafoldIbex(self.sequences, out_dir=self.out_dir,
             tempdir=self.tempdir, jobname=self.jobname,
             recycles=self.recycles,
-            multimer_predictions_per_model=self.multimer_predictions_per_model)
+            multimer_predictions_per_model=self.multimer_predictions_per_model,
+            use_precomputed_msas=self.use_precomputed_msas)
     
 
     def test_sequences_written(self) -> None:
@@ -97,7 +99,8 @@ class AlphafoldIbexTest(unittest.TestCase):
             f'time {self.conda_env}/bin/python {self.python_file} '
             '${seq_file} '
             f'{str(self.run_relax)} {self.out_dir} {self.recycles} '
-            f'{self.multimer_predictions_per_model}\n'
+            f'{self.multimer_predictions_per_model} '
+            f'{self.use_precomputed_msas}\n'
         )
 
         self.assertEqual(self.script, self.alphafoldibex.script)

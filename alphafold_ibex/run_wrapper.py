@@ -20,6 +20,7 @@ run_relax = sys.argv[2] == 'True'
 out_dir = Path(sys.argv[3])
 recycles = int(sys.argv[4])
 multimer_predictions_per_model = int(sys.argv[5])
+use_precomputed_msas = sys.argv[2] == 'True'
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
@@ -30,7 +31,8 @@ for seqs in sequences:
     try:
         exe = AlphaFold(seqs, out_dir=out_dir, recycles=recycles,
                 run_relax=run_relax,
-                multimer_predictions_per_model=multimer_predictions_per_model)
+                multimer_predictions_per_model=multimer_predictions_per_model,
+                use_precomputed_msas=use_precomputed_msas)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

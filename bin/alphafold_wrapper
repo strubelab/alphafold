@@ -82,11 +82,20 @@ def parsing(args: list=None) -> argparse.Namespace:
         'improve the quality of the models in some cases. Default is 3, max '
         'recommended is 10.'), type=validate_num, default=3)
 
-    parser.add_argument("--cpus", help=("Number of CPUs to request."),
+    parser.add_argument("--cpus", help=("Number of CPUs to request. The MSA "
+        "programs are set to use 8, which is the default here."),
         type=validate_num, default=8)
 
     parser.add_argument("--no_relax", help=("Set this flag if you don't want "
         "to run relaxation on the models."), action='store_false')
+
+    parser.add_argument("--use_precomputed_msas",
+        help=("Set this flag if you want to re-use the MSA outputs from a "
+        "previous run, for example if there was an error after the "
+        "MSA step and you want to start the same run again, or if you want to "
+        "make the same model but with a different number of recycles. "
+        "Make sure to copy the old results to a new directory if you don't "
+        "want to overwrite them."), action='store_true')
 
     parser.add_argument("--mail", help=('Email to send notifications about the '
                 'job progess in ibex.'), type=str)
@@ -112,5 +121,6 @@ if __name__ == '__main__':
     exe = AlphafoldIbex(sequences, out_dir=out_dir, recycles=args.recycles,
                     mem=args.mem, time_per_command=args.mem, gpus=args.gpus,
                     run_relax=args.no_relax, mail=args.mail, cpus=args.cpus,
-                    multimer_predictions_per_model=args.multimer_predictions_per_model)
+                    multimer_predictions_per_model=args.multimer_predictions_per_model,
+                    use_precomputed_msas=args.use_precomputed_msas)
     exe.run()
