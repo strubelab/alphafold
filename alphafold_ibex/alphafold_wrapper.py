@@ -167,7 +167,7 @@ class AlphaFold(Executor):
             self.out_dir.mkdir(parents=True)
 
         if not self.fasta_path.parent.exists():
-            self.fasta_path.mkdir(parents=True)
+            self.fasta_path.parent.mkdir(parents=True)
 
         if not self.fasta_path.exists():
             SeqIO.write(self.SeqRecs, self.fasta_path, 'fasta')
