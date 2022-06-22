@@ -101,10 +101,10 @@ class AlphaFold(Executor):
             self.out_dir = Path(f'{self.target_name}')
         else:
             self.out_dir = out_dir
+
+        self.out_model = self.out_dir / self.target_name
         
-        self.fasta_path = (self.out_dir /
-                           f'{self.target_name}' /
-                           f'{self.target_name}.fasta')
+        self.fasta_path = self.out_model / f'{self.target_name}.fasta'
 
         self.make_args()
 
@@ -166,8 +166,8 @@ class AlphaFold(Executor):
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
 
-        if not self.fasta_path.parent.exists():
-            self.fasta_path.parent.mkdir(parents=True)
+        if not self.out_model.exists():
+            self.out_model.mkdir(parents=True)
 
         if not self.fasta_path.exists():
             SeqIO.write(self.SeqRecs, self.fasta_path, 'fasta')
@@ -179,8 +179,7 @@ class AlphaFold(Executor):
         2. Generate the error message and raise the corresponding error
         """
 
-        features_files = list((self.out_dir/self.fasta_path.stem).glob(
-                                                            'result_model_*'))
+        features_files = list(self.out_model.glob('result_model_*'))
         
         if len(features_files)>0:
             self.finish()
@@ -217,14 +216,13 @@ class AlphaFold(Executor):
         """
 
         # Read otuputs
-        features_files = list((self.out_dir/self.fasta_path.stem).glob(
-                                                            'result_model_*'))
+        features_files = list(self.out_model.glob('result_model_*'))
 
         self.prediction_results, self.outs, self.model_rank = (
                                             process_outputs(features_files))
 
         # Plot properties
-        self.plots_dir = self.out_dir / 'plots'
+        self.plots_dir = self.out_model / 'plots'
         self.plots_dir.mkdir()
 
         plot_paes([self.outs[k]["pae"] for k in self.model_rank],
