@@ -90,7 +90,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         "to run relaxation on the models."), action='store_false')
 
     parser.add_argument("--use_precomputed_msas",
-        help=("Set this flag if you want to re-use the MSA outputs from a "
+        help=("Set this flag if you want to reuse the MSA outputs from a "
         "previous run, for example if there was an error after the "
         "MSA step and you want to start the same run again, or if you want to "
         "make the same model but with a different number of recycles. "
