@@ -1,70 +1,185 @@
-# AlphaFold in Ibex
----
-Follow these steps to run AlphaFold in Ibex:
+# Installation
+## Prerequisites
+
+You need to have Miniconda installed in your home directory in ibex. Follow these steps if you need to install it:
 
 1. Login to Ibex through your Terminal application (mac) with the command:
 
     ```bash
-    $ ssh [your_username]@glogin.ibex.kaust.edu.sa
+    ssh [your_username]@glogin.ibex.kaust.edu.sa
     ```
 
    For logging in on Windows, you need an ssh client application such as [PuTTY](https://www.putty.org/).
 
-2. Go to your scratch directory in Ibex:
+2. Download the Miniconda installation script, and run it.
 
     ```bash
-    $ cd /ibex/scratch/[your_username]/
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
     ```
 
-3. Clone this repository and `cd` into the directory created. The `git clone` command is done only once, once you have the repository just go directly to it.
+    <span style='background-color:yellow;color:black'>Note</span>: The installation assistant will prompt you for input in a few steps in case you want to customize your installation. You can just accept the defaults with enter, **except** when it asks you the following:
+
+    ```
+    Do you wish the installer to initialize Miniconda3
+    by running conda init?
+    ```
+
+    In here you should type `yes` and press enter.
+
+3. Load modifications onto your current session:
 
     ```bash
-    $ git clone https://github.com/strubelab/alphafold.git
-    $ cd alphafold
+    source ~/.bashrc
     ```
 
-4. Load the `alphafold` and `cuda libraries`
+4. Done! You should see either `(miniconda3)` or `(base)` in you terminal before the prompt, which means conda was installed correctly and the `base` environment is activated. If you are still unsure about the process, you can checkout the following [video](https://www.youtube.com/watch?v=X-W7aVXH3_w) in the KAUST Visualization Core Lab YouTube channel with the detailed steps.
+
+## Install AlphaFold
+
+Follow these steps to install your instance of AlphaFold in Ibex:
+
+1. Login to Ibex through your Terminal application (mac) with the command:
+
+    ```bash
+    ssh [your_username]@glogin.ibex.kaust.edu.sa
+    ```
+
+   For logging in on Windows, you need an ssh client application such as [PuTTY](https://www.putty.org/).
+
+2. Go to your scratch directory:
+
+    ```bash
+    cd /ibex/scratch/[your_username]/
+    ```
+
+3. Clone the following repositories, and then `cd` into the `alphafold` directory.
+
+    ```bash
+    git clone https://github.com/strubelab/alphafold.git
+    git clone https://github.com/guzmanfj/Executor.git
+    cd alphafold
+    ```
+
+4. Load the `cuda` library
 
     ```bash
     module load alphafold cuda/11.2.2
     ```
 
-5. Edit the following lines in the `run_monomer.sbatch` or `run_multimer.sbatch` scripts.
-
-    ```
-    fasta_file=input/YOUR_SEQUENCE.fasta
-    out_dir=output
-    recycles=3
-    ```
-
-    Where:
-    
-    - `fasta_file`: path to the fasta file with the sequence(s) that you want to model:
-      - if monomeric, only a single sequence
-      - if multimeric, include all the sequences. Repeat each sequence multiple times according to the number of subunits.
-    
-    - `out_dir`: directory to save the outputs
-    - `recycles`: number of times to recycle the outputs through the network to get potentially better models. 3 is recommended.
-
-  - You can edit the file with a command-line editor such as `nano`:
-  
-    - `$ nano run_monomer.sbatch`
-    - Edit the file
-    - Save with `Ctrl+O`, check the name and press `Enter`
-    - Exit with `Ctrl+X`
-
-
-6. Submit the script to Ibex:
+5. Create a virtual environmnet to work on, and activate it. This step will take approximately 15 minutes, so make sure you don't lose your connection to ibex:
 
     ```bash
-    # For modeling monomers
-    $ sbatch run_monomer.sbatch
-
-    # For modeling multimers
-    $ sbatch run_multimer.sbatch
+    conda env create --prefix ./env --file environment.yml
+    conda activate ./env
     ```
 
-7. Check the job status:
+6. Install the newly downloaded `alphafold` and `Executor` packages in your current environment:
+
+    ```bash
+    pip install -e ../Executor
+    pip install -e .
+    ```
+
+7. Done! The alphafold wrapper should be installed now. Check that you can access the `alphafold_wrapper` command by running **`alphafold_wrapper --help`**
+
+    ```
+    alphafold_wrapper --help
+
+    usage: alphafold_wrapper [-h] [--input INPUT [INPUT ...]] --destination DESTINATION [--gpus GPUS]
+                            [--time TIME] [--mem MEM] [--recycles RECYCLES] [--cpus CPUS]
+                            [--no_relax] [--use_precomputed_msas] [--mail MAIL]
+                            [--multimer_predictions_per_model MULTIMER_PREDICTIONS_PER_MODEL]
+
+    Takes one or more FASTA files with amino acid sequences (one for each model), and submits a job
+    array to ibex to run AlphaFold on each file.
+
+    options:
+      -h, --help            show this help message and exit
+      --input INPUT [INPUT ...]
+                            Fasta file(s) with the sequence(s) to model. Provide one fasta file for
+                            each model that you want to produce.
+      --destination DESTINATION
+                            Path for saving the resulting AlphaFold models. It will create one
+                            subdirectory for each model. Also will contain the sequence files as they
+                            were submitted to ibex, the script that was submitted and the ibex stdout
+                            files.
+      --gpus GPUS           Number of GPUs to request to ibex. It is likely that AlphaFold only ever
+                            uses 1. (default=1)
+      --time TIME           Time in minutes to give to each job. (default="auto")
+      --mem MEM             Memory in GB to allocate to each job. (default="auto")
+      --recycles RECYCLES   Number of times to recycle the output through the network. More recycles
+                            might help to mildly improve the quality of the models in some cases.
+                            Default is 3, max recommended is 10.
+      --cpus CPUS           Number of CPUs to request. The MSA programs are set to use 8, which is the
+                            default here.
+      --no_relax            Set this flag if you don't want to run relaxation on the models.
+      --use_precomputed_msas
+                            Set this flag if you want to reuse the MSA outputs from a previous run,
+                            for example if there was an error after the MSA step and you want to start
+                            the same run again, or if you want to make the same model but with a
+                            different number of recycles. Make sure to copy the old results to a new
+                            directory if you don't want to overwrite them.
+      --mail MAIL           Email to send notifications about the job progess in ibex.
+      --multimer_predictions_per_model MULTIMER_PREDICTIONS_PER_MODEL
+                            Number of multimeric predictions to make per each of the 5 ML models that
+                            AlphaFold runs. The total number of structures predicted will be 5 times
+                            this number (e.g. `--multimer_predictions_per_model 5` will give 25
+                            structures in total). Defaults to 1.
+    ```
+
+# Usage
+
+1. Login to ibex, navigate to the `alphafold` directory installed earlier, and activate the conda environment:
+
+    ```bash
+    ssh [your_username]@glogin.ibex.kaust.edu.sa
+    cd /ibex/scratch/[your_username]/alphafold  # the exact location might vary depending 
+                                                # on where you cloned the repository
+    conda activate ./env
+    ```
+
+2. Run the `alphafold_wrapper` program:
+
+    There are basically two scenarios for making models:
+
+    A. Make one or multiple models from scratch:
+
+      ```bash
+      alphafold_wrapper --input ./data/model1.fasta data/model2.fasta --destination ./results --recycles 6 --mail your.email@kaust.edu.sa
+      ```
+
+      - `--input` : One or more fasta files for modeling. One modeling job will be launched for each fasta file separately. If you want to model a multimer, give all the fasta sequences of the multimeric chains in the same file. For example, if you want to make a complex A2B3 (two subunits of chain A and 3 subunits of chain B), the fasta file will look like this:
+
+          ```
+          >A
+          TGTGTGASDFASDFASDFWERT
+          >A
+          TGTGTGASDFASDFASDFWERT
+          >B
+          KLKFDASFTERPLKLFDAS
+          >B
+          KLKFDASFTERPLKLFDAS
+          >B
+          KLKFDASFTERPLKLFDAS
+          ```
+
+      - `--destination` : The directory where the outputs will be saved. One directory will be created inside for each fasta file provided in `--input`.
+
+      - `--recycles` : Number of times to recycle the output through AlphaFold. 3 is the default.
+
+      - `--mail` : Email to receive notifications from ibex about the job status
+
+
+    B. Make a model reusing the MSAs from another run:
+
+      Since calcualting the multiple sequence alignments for your protein(s) takes a long time, you might want to reuse those results in a new run, in case the previous one failed at a subsequent step (e.g. if the ibex job runs out of time or memory), or if you want to make the same model but with a different number of recycles. For this, you need to leave the output directory as it is, run alphafold again with the same `--input` and `--destination` parameters, and include the `--use_precomputed_msas` flag and others you might want to change (e.g. a different number of recycles). Since this will overwrite the old results in the `--destination` directory except for the MSAs, you can copy the entire directory somewhere else if you want to keep them.
+
+      ```bash
+      alphafold_wrapper --input data/model1.fasta --destination ./results --use_precomputed_msas --recycles 12
+      ```
+
+3. Check the job status:
 
     ```bash
     $ squeue -u [user_name]
@@ -72,83 +187,141 @@ Follow these steps to run AlphaFold in Ibex:
    
    When the job is finished (you can't see it in the list when running the previous command), look at the output folder and confirm that all the files are present:
 
-   ```bash
-   $ ls -lh output/[protein_name]
+    ```
+    ls -lh results/
 
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 115M Dec  4 01:16 features.pkl
-   drwxr-xr-x 2 guzmanfj g-guzmanfj    4 Dec  4 01:16 msas
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 ranked_0.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 ranked_1.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 ranked_2.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 ranked_3.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 ranked_4.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj  370 Dec  4 02:43 ranking_debug.json
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 01:40 relaxed_model_1_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 01:56 relaxed_model_2_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:12 relaxed_model_3_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:27 relaxed_model_4_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 1.3M Dec  4 02:43 relaxed_model_5_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 547M Dec  4 01:27 result_model_1_ptm.pkl
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 547M Dec  4 01:49 result_model_2_ptm.pkl
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 548M Dec  4 02:05 result_model_3_ptm.pkl
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 548M Dec  4 02:21 result_model_4_ptm.pkl
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 548M Dec  4 02:35 result_model_5_ptm.pkl
-   -rw-r--r-- 1 guzmanfj g-guzmanfj  823 Dec  4 02:43 timings.json
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 644K Dec  4 01:27 unrelaxed_model_1_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 644K Dec  4 01:49 unrelaxed_model_2_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 644K Dec  4 02:05 unrelaxed_model_3_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 644K Dec  4 02:21 unrelaxed_model_4_ptm.pdb
-   -rw-r--r-- 1 guzmanfj g-guzmanfj 644K Dec  4 02:36 unrelaxed_model_5_ptm.pdb
-   ```
-
-8. Run the script for processing the outputs and making plots:
-
-    ```bash
-    $ ./process_results.py [fasta_file] [af_outputs]
+    drwxr-xr-x 4 guzmanfj g-guzmanfj  26 Jun 22 19:15 [protein_id]-[multimeric_state]/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj   5 Jun 22 23:43 out_ibex/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj   3 Jun 22 18:47 sequences/
     ```
 
-    Where:
+    ```
+    ls -lh results/[protein_id]-[multimeric_state]
 
-    - `fasta_file` is the path to the same fasta file that was submitted to AlphaFold.
-    - `af_outputs` is the same directory indicated in the previous script that now contains the AlphaFold outputs.
+    total 63M
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  136 Jun 22 18:49 [protein_id]-[multimeric_state].fasta
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 327K Jun 22 23:46 features.pkl
+    drwxr-xr-x 2 guzmanfj g-guzmanfj    4 Jun 22 19:03 msas/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj    9 Jun 22 19:15 plots/
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_1.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_2.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_3.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_4.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  440 Jun 22 23:59 ranking_debug.json
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:50 relaxed_model_1_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:52 relaxed_model_2_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:55 relaxed_model_3_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:57 relaxed_model_4_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 relaxed_model_5_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:49 result_model_1_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:52 result_model_2_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:54 result_model_3_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:56 result_model_4_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:58 result_model_5_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  938 Jun 22 23:59 timings.json
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:49 unrelaxed_model_1_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:52 unrelaxed_model_2_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:54 unrelaxed_model_3_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:56 unrelaxed_model_4_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:58 unrelaxed_model_5_ptm_pred_0.pdb
+    ```
 
 
-9. Look for your plots in the directory `[af_outputs]/[sequence_name]/plots`
+4. Check the results
+
+    After a successful run, you will find the following inside of the `--destination` directory: 
+
+    ```
+    ls -lh results/
+
+    drwxr-xr-x 4 guzmanfj g-guzmanfj  26 Jun 22 19:15 [protein_id]-[multimeric_state]/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj   5 Jun 22 23:43 out_ibex/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj   3 Jun 22 18:47 sequences/
+    ```
+    
+    - One folder for each fasta file in `--input` containing the resulting models. These directories will be named after the **sequence IDs** found in the fasta headers, along with the number of subunits for that sequence. For example, for the A2B3 fasta file shown above, the corresponding directory with the results would be named `A-2_B-3`. 
+    
+    - The `out_ibex` directory with the stdout from ibex, which will be useful in case you need to troubleshoot.
+
+    - The `sequences` directory with the sequences that were submitted to ibex. Useful for debugging only.
+    
+    
+    Inside each model directory you will find:
+
+    ```
+    ls -lh results/[protein_id]-[multimeric_state]
+
+    total 63M
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  136 Jun 22 18:49 [protein_id]-[multimeric_state].fasta
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 327K Jun 22 23:46 features.pkl
+    drwxr-xr-x 2 guzmanfj g-guzmanfj    4 Jun 22 19:03 msas/
+    drwxr-xr-x 2 guzmanfj g-guzmanfj    9 Jun 22 19:15 plots/
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_1.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_2.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_3.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 ranked_4.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  440 Jun 22 23:59 ranking_debug.json
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:50 relaxed_model_1_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:52 relaxed_model_2_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:55 relaxed_model_3_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:57 relaxed_model_4_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj 142K Jun 22 23:59 relaxed_model_5_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:49 result_model_1_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:52 result_model_2_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:54 result_model_3_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:56 result_model_4_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  13M Jun 22 23:58 result_model_5_ptm_pred_0.pkl
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  938 Jun 22 23:59 timings.json
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:49 unrelaxed_model_1_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:52 unrelaxed_model_2_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:54 unrelaxed_model_3_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:56 unrelaxed_model_4_ptm_pred_0.pdb
+    -rw-r--r-- 1 guzmanfj g-guzmanfj  71K Jun 22 23:58 unrelaxed_model_5_ptm_pred_0.pdb
+    ```
+
+      - The `pdb` models (`ranked*.pdb` and `relaxed*.pdb`).
+
+      - A `plots` directory with plots of the different quality scores. The model ranking in these plots is done with the pLDDT scores, and the names correspond to the models called `relaxed_model_*.pdb`.
+    
 
 
-## Results
-
+# Results
 ### Protein 2D plots
 
 2D pictures of the proteins colored by pLDDT score, indicating the rank and the model name.
 
 `plots/rank_[12345]_model_[model_name].png`
-<img src='doc/pyk2/rank_1_model_5_ptm.png'>
 
+<img src='../doc/pyk2/rank_1_model_5_ptm.png'>
 
 Note: some times there are discrepancies between the model ranking given by AlphaFold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both.
-
 
 ### Predicted aligned error:
 Metric for assessing inter-domain accuracy. See the full explanation at the bottom of every entry in the AF database (e.g. https://alphafold.ebi.ac.uk/entry/Q5VSL9)
 
 `plots/pae.png`
-<img src='doc/pyk2/pae.png'>
+
+<img src='../doc/pyk2/pae.png'>
 
 ### Predicted contacts
 
 `plots/predicted_contacts.png`
-<img src='doc/pyk2/predicted_contacts.png'>
+
+<img src='../doc/pyk2/predicted_contacts.png'>
 
 ### Predicted distances
 
 `plots/predicted_distances.png`
-<img src='doc/pyk2/predicted_distances.png'>
+
+<img src='../doc/pyk2/predicted_distances.png'>
 
 ### Predicted pLDDT
 
 `plots/plddts.png`
-<img src='doc/pyk2/plddts.png'>
+
+<img src='../doc/pyk2/plddts.png'>
 
 The numbers in parenthesis are the average pLDDTs for the whole sequence.
 
@@ -169,40 +342,35 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
 
 - I don't see my job when typing `squeue -u [my_username]` in Ibex, and the output directory is empty/doesn't have all the files with the results.
 
-  If this happens, something might have gone wrong with the AlphaFold execution. You should take a look at the file with the standard output from Ibex, whose location is indicated by the `#SBATCH -o` parameter in the `run_[monomer|multimer].sbatch` file. The default location is in the `out_ibex` directory, so to look at this file you could do:
+  If this happens, something might have gone wrong with the AlphaFold execution. You should take a look at the file with the standard output from Ibex, located in the `out_ibex` directory. To look at this file you could do:
 
   ```bash
-  $ tail out_ibex/Alphafold2.[jobid].out
+  $ tail out_ibex/AlphafoldIbex.[jobid].out
   ```
 
-  Take a look at the output and it will tell you if the program was stopped due to time or memory limitations, or if there was some other error. In the first two cases, you would change the following lines in the `run_[monomer|multimer].sh` script:
-
-  ```
-  #SBATCH --time=05:00:00
-  #SBATCH --mem=64G
-  ```
+  Take a look at the output and it will tell you if the program was stopped due to time or memory limitations, or if there was some other error. In the first two cases, you would re-run the alphafold command but asking for more time and/or memory with the `--time` and `--mem` arguments.
 
   From my own experience, the following values should work for the corresponding **total** sequence length (sum of all sequences in the input):
 
   **~60 residues**
 
   ```
-  #SBATCH --time=01:00:00
-  #SBATCH --mem=64G
+  --time 60
+  --mem 64
   ```
 
   **~350 residues**
 
   ```
-  #SBATCH --time=02:00:00
-  #SBATCH --mem=64G
+  --time 120
+  --mem 64
   ```
 
   **~1,000 residues**
 
   ```
-  #SBATCH --time=10:00:00
-  #SBATCH --mem=128G
+  --time 600
+  --mem 128
   ```
 
 - Why don't I just ask for as many resources as possible to prevent the program from failing?
