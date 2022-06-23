@@ -77,6 +77,12 @@ class AlphaFold(Executor):
         self.ALPHAFOLD_SCRIPT = Path(__file__).parent.parent / 'run_alphafold.py'
 
         self.SeqRecs = sequences if isinstance(sequences, list) else [sequences]
+        # Reduce sequence id if it is in uniprot format
+        for seq in self.SeqRecs:
+            sid = seq.id.split('|')
+            if len(sid)>1:
+                seq.name = seq.description = seq.id = sid[1]
+
         self.model_preset = model_preset
         self.recycles = recycles
         self.db_preset = db_preset
