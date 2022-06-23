@@ -355,22 +355,19 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
   **~60 residues**
 
   ```
-  --time 60
-  --mem 64
+  --time 60 --mem 64
   ```
 
   **~350 residues**
 
   ```
-  --time 120
-  --mem 64
+  --time 120 --mem 64
   ```
 
   **~1,000 residues**
 
   ```
-  --time 600
-  --mem 128
+  --time 600 --mem 128
   ```
 
 - Why don't I just ask for as many resources as possible to prevent the program from failing?
