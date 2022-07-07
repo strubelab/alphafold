@@ -119,7 +119,7 @@ if __name__ == '__main__':
     out_dir = Path(args.destination)
 
     exe = AlphafoldIbex(sequences, out_dir=out_dir, recycles=args.recycles,
-                    mem=args.mem, time_per_command=args.mem, gpus=args.gpus,
+                    mem=args.mem, time_per_command=args.time, gpus=args.gpus,
                     run_relax=args.no_relax, mail=args.mail, cpus=args.cpus,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     use_precomputed_msas=args.use_precomputed_msas)
