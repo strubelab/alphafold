@@ -143,6 +143,7 @@ class AlphafoldIbex(IbexRun):
             f'#SBATCH --partition=batch\n'
             f'#SBATCH --job-name={self.jobname}\n'
             f'#SBATCH --output={self.out_ibex}/%x.%j.out\n'
+            f'#SBATCH --error={self.out_ibex}/%x.%j.out\n'
             f'#SBATCH --time={self.time_per_job}\n'
             f'#SBATCH --mem={self.mem}G\n'
             f'#SBATCH --gres=gpu:{self.gpus}\n'
