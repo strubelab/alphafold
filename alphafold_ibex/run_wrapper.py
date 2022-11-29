@@ -12,7 +12,20 @@ import pickle
 
 from executor.executor import RunError
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+# The last time I installed it (28Nov2022) this doesn't do anything... I think
+# that in one of the updated libraries there is already a logger handler being
+# set, so this function doesn't have an effect anymore. Have to set the level
+# of the current logger instead
+# logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.getLogger().setLevel(logging.INFO)
+# Could add a new handler with different formatting, but have to change the
+# level of the currently existing handler to ignore INFO messages, otherwise
+# the messages will be duplicated
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# ch.setFormatter(formatter)
+# logging.getLogger().addHandler(ch)
 
 # Take the file with sequences and the output directory from the command-line inputs
 seqs_file = Path(sys.argv[1])
