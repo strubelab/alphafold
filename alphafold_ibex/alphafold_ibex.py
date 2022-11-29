@@ -136,6 +136,14 @@ class AlphafoldIbex(IbexRun):
             self.out_ibex.mkdir(parents=True)
 
         self.write_sequences()
+        
+        self.python_command = (
+            f'{self.conda_env}/bin/python {self.python_file} '
+            '${seq_file} '
+            f'{self.run_relax} {self.out_dir} {self.recycles} '
+            f'{self.multimer_predictions_per_model} '
+            f'{self.use_precomputed_msas}\n'
+        )
 
         self.script = (
             '#!/bin/bash -l\n'
@@ -162,11 +170,8 @@ class AlphafoldIbex(IbexRun):
             '\n'
             f'seq_file="{self.sequences_dir.resolve()}/'
             'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
-            f'time {self.conda_env}/bin/python {self.python_file} '
-            '${seq_file} '
-            f'{self.run_relax} {self.out_dir} {self.recycles} '
-            f'{self.multimer_predictions_per_model} '
-            f'{self.use_precomputed_msas}\n'
+            f"echo '{self.python_command}'\n"
+            f'time {self.python_command}\n'
         )
 
         with open(self.script_file, 'w') as f:
