@@ -1,7 +1,28 @@
-# Installation
-## Prerequisites
+# Prerequisites
 
-You need to have Miniconda installed in your home directory in ibex. Follow these steps if you need to install it:
+This is not meant to be an exhaustive guide on how to use ibex and a linux terminal, so if you're completely unfamiliar with these concepts, I recommend you to take a look at the following resources first:
+
+- What is Ibex?
+
+  Ibex is a computer cluster that you can access to run "jobs" or execute programs that require large amounts of memory, CPU or GPU power. If you want to learn more you can check out the [Ibex training site](https://www.hpc.kaust.edu.sa/ibex/training) or the [user guide](https://www.hpc.kaust.edu.sa/ibex/ibex_guide).
+
+- What is a terminal?
+
+  If you're not familiar with the use of a Unix terminal/shell, you would greatly benefit from watching this [introductory workshop](https://www.youtube.com/watch?v=QB4JgAVgJHo) by the KAUST Visualization Core Lab, inspired from this [short course](https://swcarpentry.github.io/shell-novice/) by Software Carpentry.
+
+  Also check out this "[linux cheat sheet](https://i.redd.it/isnefnt32wn21.jpg)" for a list of common commands. The ones in the section called "Files & Navigating" will be the most useful to you.
+
+- How do I transfer files between ibex and my computer?
+
+  To connect to ibex through the Finder application (Mac only), go to the menu `Go -> Connect to Server...` , and then write the address to ibex in the text field: `smb://samba.ibex.kaust.edu.sa` and press Connect. Then select from the list `ibex_scratch` to connect to your scratch directory in ibex. You can now drag and drop files between ibex and your local storage, create and delete directories, etc.
+
+  For connecting in a Windows computer, you could try a tutorial such as the [following](https://www.techrepublic.com/article/how-to-connect-to-linux-samba-shares-from-windows-10/) (haven't tried it myself), or contact ibex@hpc.kaust.edu.sa for instructions.
+
+
+# Installation
+## Installing Miniconda
+
+You need to have Miniconda installed in your home directory in ibex. If you already have it installed, you can skip to "Install Alphafold":
 
 1. Login to Ibex through your Terminal application (mac) with the command:
 
@@ -18,7 +39,7 @@ You need to have Miniconda installed in your home directory in ibex. Follow thes
     bash Miniconda3-latest-Linux-x86_64.sh
     ```
 
-    <span style='background-color:yellow;color:black'>Note</span>: The installation assistant will prompt you for input in a few steps in case you want to customize your installation. You can just accept the defaults with enter, **except** when it asks you the following:
+    <span style='background-color:yellow;color:black'>Note</span>: The installation assistant will prompt you for input in a few steps, to accept the license agreement, and if you want to set a custom installation directory. You can just accept the defaults. Near the end, when it asks you the following:
 
     ```
     Do you wish the installer to initialize Miniconda3
@@ -35,7 +56,7 @@ You need to have Miniconda installed in your home directory in ibex. Follow thes
 
 4. Done! You should see either `(miniconda3)` or `(base)` in you terminal before the prompt, which means conda was installed correctly and the `base` environment is activated. If you are still unsure about the process, you can checkout the following [video](https://www.youtube.com/watch?v=X-W7aVXH3_w) in the KAUST Visualization Core Lab YouTube channel with the detailed steps.
 
-## Install AlphaFold
+## Installing AlphaFold
 
 Follow these steps to install your instance of AlphaFold in Ibex:
 
@@ -61,27 +82,21 @@ Follow these steps to install your instance of AlphaFold in Ibex:
     cd alphafold
     ```
 
-4. Load the `cuda` library
-
-    ```bash
-    module load alphafold cuda/11.2.2
-    ```
-
-5. Create a virtual environmnet to work on, and activate it. This step will take approximately 15 minutes, so make sure you don't lose your connection to ibex:
+4. Create a virtual environmnet to work on, and activate it. This step will take 15-30 minutes, so make sure you don't lose your connection to ibex:
 
     ```bash
     conda env create --prefix ./env --file environment.yml
     conda activate ./env
     ```
 
-6. Install the newly downloaded `alphafold` and `Executor` packages in your current environment:
+5. Install the newly downloaded `alphafold` and `Executor` packages in your current environment:
 
     ```bash
     pip install -e ../Executor
     pip install -e .
     ```
 
-7. Done! The alphafold wrapper should be installed now. Check that you can access the `alphafold_wrapper` command by running **`alphafold_wrapper --help`**
+6. Done! The alphafold wrapper should be installed now. Check that you can access the `alphafold_wrapper` command by running **`alphafold_wrapper --help`**
 
     ```
     alphafold_wrapper --help
@@ -292,11 +307,11 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
 2D pictures of the proteins colored by pLDDT score, indicating the rank and the model name.
 
-`plots/rank_[12345]_model_[model_name].png`
+`plots/rank_[01234]_model_[model_name].png`
 
 <img src='../doc/pyk2/rank_1_model_5_ptm.png'>
 
-Note: some times there are discrepancies between the model ranking given by AlphaFold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both.
+Note: some times there are discrepancies between the model ranking given by AlphaFold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both. The `ranking_debug.json` file contains the names of the models from AlphaFold that correspond to the `ranked_[01234].pdb` files.
 
 ### Predicted aligned error:
 Metric for assessing inter-domain accuracy. See the full explanation at the bottom of every entry in the AF database (e.g. https://alphafold.ebi.ac.uk/entry/Q5VSL9)
@@ -331,14 +346,6 @@ The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
 
 
 ## Troubleshooting / FAQs
-
-- What is Ibex?
-
-  Ibex is a computer cluster that you can access to run "jobs" or execute programs that require large amounts of memory, CPU or GPU power. If you want to learn more you can check out the [Ibex training site](https://www.hpc.kaust.edu.sa/ibex/training) or the [user guide](https://www.hpc.kaust.edu.sa/ibex/ibex_guide).
-
-- What is a terminal?
-
-  If you're not familiar with the use of a Unix terminal/shell, you would greatly benefit from watching this [introductory workshop](https://www.youtube.com/watch?v=QB4JgAVgJHo) by the KAUST Visualization Core Lab, inspired from this [short course](https://swcarpentry.github.io/shell-novice/) by Software Carpentry.
 
 - I don't see my job when typing `squeue -u [my_username]` in Ibex, and the output directory is empty/doesn't have all the files with the results.
 
