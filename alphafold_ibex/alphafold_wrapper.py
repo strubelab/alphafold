@@ -256,7 +256,7 @@ class AlphaFold(Executor):
                          f'pTM={self.outs[name]["pTMscore"]:.2f}')
 
                 plt.tight_layout()
-                plt.savefig(self.plots_dir/f'rank_{i+1}_{name}.png', dpi=200)
+                plt.savefig(self.plots_dir/f'rank_{i}_{name}.png', dpi=200)
                 plt.close()
             except:
                 logging.error(f"Could not generate protein plot for {name}...")
