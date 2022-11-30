@@ -16,7 +16,7 @@ class AlphafoldIbex(IbexRun):
 
     def __init__(self, sequences:list, out_dir:Path, time_per_command:int='auto',
         jobname:str='AlphafoldIbex', cpus:int=8, recycles:int=6, mem:int='auto',
-        gpus:int='auto', run_relax:bool=True, mail:str=None,
+        gpus:int='auto', gpu_type:str='v100', run_relax:bool=True, mail:str=None,
         multimer_predictions_per_model:int=5,
         use_precomputed_msas:bool=False, **kw):
         """
@@ -58,6 +58,7 @@ class AlphafoldIbex(IbexRun):
         self.run_relax = run_relax
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
+        self.gpu_type = gpu_type
         if mail:
             self.mail_string = (f'#SBATCH --mail-user={mail}\n'
                                 f'#SBATCH --mail-type=ALL\n')
@@ -142,7 +143,7 @@ class AlphafoldIbex(IbexRun):
             '${seq_file} '
             f'{self.run_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
-            f'{self.use_precomputed_msas}\n'
+            f'{self.use_precomputed_msas} {self.gpu_type}\n'
         )
 
         self.script = (
@@ -156,7 +157,7 @@ class AlphafoldIbex(IbexRun):
             f'#SBATCH --mem={self.mem}G\n'
             f'#SBATCH --gres=gpu:{self.gpus}\n'
             f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
-            f'#SBATCH --constraint=[v100]\n'
+            f'#SBATCH --constraint=[{self.gpu_type}]\n'
             f'#SBATCH --array=0-{self.njobs-1}\n'
             f'{self.mail_string}'
             '\n'

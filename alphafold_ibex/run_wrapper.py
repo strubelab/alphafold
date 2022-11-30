@@ -33,7 +33,8 @@ run_relax = sys.argv[2] == 'True'
 out_dir = Path(sys.argv[3])
 recycles = int(sys.argv[4])
 multimer_predictions_per_model = int(sys.argv[5])
-use_precomputed_msas = sys.argv[2] == 'True'
+use_precomputed_msas = sys.argv[6] == 'True'
+gpu_type = sys.argv[7]
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
@@ -45,7 +46,7 @@ for seqs in sequences:
         exe = AlphaFold(seqs, out_dir=out_dir, recycles=recycles,
                 run_relax=run_relax,
                 multimer_predictions_per_model=multimer_predictions_per_model,
-                use_precomputed_msas=use_precomputed_msas)
+                use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     
@@ -54,4 +55,3 @@ for seqs in sequences:
         logging.error(f"{len(features_files)} FEATURES CLACULATED FOR "
                       f"{exe.target_name}")
         raise
-        

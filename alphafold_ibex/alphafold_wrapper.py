@@ -40,6 +40,7 @@ class AlphaFold(Executor):
                  target_name:str=None,
                  multimer_predictions_per_model:int=5,
                  use_precomputed_msas:bool=False,
+                 gpu_type:str='v100',
                  **kw):
         """
         Instantiate variables
@@ -73,7 +74,11 @@ class AlphaFold(Executor):
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
-        self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA'])
+        if gpu_type=='v100':
+            self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA'])
+        else:
+            self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA_A100'])
+            
         self.ALPHAFOLD_SCRIPT = Path(__file__).parent.parent / 'run_alphafold.py'
 
         self.SeqRecs = sequences if isinstance(sequences, list) else [sequences]

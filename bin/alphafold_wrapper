@@ -105,7 +105,11 @@ def parsing(args: list=None) -> argparse.Namespace:
         'AlphaFold runs. The total number of structures predicted will be 5 '
         'times this number (e.g. `--multimer_predictions_per_model 5` will '
         'give 25 structures in total). Defaults to 1.'), type=int, default=1)
-
+    
+    parser.add_argument("--gpu_type", help=("Whether to use V100 or A100 GPU."
+        " If you don't know what this is, leave the default. (Default=v100)"),
+        default='v100', choices=['v100','a100'])
+ 
     return parser.parse_args(args)
 
 
@@ -122,5 +126,6 @@ if __name__ == '__main__':
                     mem=args.mem, time_per_command=args.time, gpus=args.gpus,
                     run_relax=args.no_relax, mail=args.mail, cpus=args.cpus,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
-                    use_precomputed_msas=args.use_precomputed_msas)
+                    use_precomputed_msas=args.use_precomputed_msas,
+                    gpu_type=args.gpu_type)
     exe.run()
