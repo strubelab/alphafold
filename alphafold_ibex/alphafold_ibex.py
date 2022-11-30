@@ -170,7 +170,7 @@ class AlphafoldIbex(IbexRun):
             '\n'
             f'seq_file="{self.sequences_dir.resolve()}/'
             'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
-            f"echo '{self.python_command}'\n"
+            f'echo "{self.python_command}"\n'
             f'time {self.python_command}\n'
         )
 
