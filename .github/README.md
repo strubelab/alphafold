@@ -6,6 +6,14 @@ This is not meant to be an exhaustive guide on how to use ibex and a linux termi
 
   Ibex is a computer cluster that you can access to run "jobs" or execute programs that require large amounts of memory, CPU or GPU power. If you want to learn more you can check out the [Ibex training site](https://www.hpc.kaust.edu.sa/ibex/training) or the [user guide](https://www.hpc.kaust.edu.sa/ibex/ibex_guide).
 
+  You can connect to ibex from your Terminal application (Mac) with the following command (without the brackets around your username):
+
+  ```bash
+  ssh [your_username]@glogin.ibex.kaust.edu.sa
+  ```
+
+  To connect in Windows, you need an ssh client application such as [PuTTY](https://www.putty.org/).
+
 - What is a terminal?
 
   If you're not familiar with the use of a Unix terminal/shell, you would greatly benefit from watching this [introductory workshop](https://www.youtube.com/watch?v=QB4JgAVgJHo) by the KAUST Visualization Core Lab, inspired from this [short course](https://swcarpentry.github.io/shell-novice/) by Software Carpentry.
