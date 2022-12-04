@@ -67,8 +67,8 @@ def process_outputs(features_files:list):
             prediction_results.items()}
     
     # Rank models according to average pLDDT
-    model_rank = list(outs.keys())
-    model_rank = [model_rank[i] for i in \
-                  np.argsort([outs[x]['pLDDT'] for x in model_rank])[::-1]]
+    # model_rank = list(outs.keys())
+    # model_rank = [model_rank[i] for i in \
+    #               np.argsort([outs[x]['pLDDT'] for x in model_rank])[::-1]]
 
-    return prediction_results, outs, model_rank
+    return prediction_results, outs#, model_rank

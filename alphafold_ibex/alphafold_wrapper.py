@@ -10,6 +10,7 @@ from Bio import SeqIO
 from pathlib import Path
 from datetime import date
 import configparser
+import json
 from matplotlib import pyplot as plt
 
 from executor.executor import Executor
@@ -229,8 +230,12 @@ class AlphaFold(Executor):
         # Read otuputs
         features_files = list(self.out_model.glob('result_model_*'))
 
-        self.prediction_results, self.outs, self.model_rank = (
+        self.prediction_results, self.outs = (
                                             process_outputs(features_files))
+        
+        # Read model ranking from 'ranking_debug.json'
+        with open(self.out_model/'ranking_debug.json', 'r') as f:
+            self.model_rank = json.load(f)['order']
 
         # Plot properties
         self.plots_dir = self.out_model / 'plots'
