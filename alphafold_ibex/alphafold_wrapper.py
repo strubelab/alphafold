@@ -261,7 +261,7 @@ class AlphaFold(Executor):
         for i,name in enumerate(self.model_rank):
             try:
                 plot_protein(self.prediction_results[name], self.chain_breaks)
-                plt.suptitle(f'Rank {i+1}: {name}, '
+                plt.suptitle(f'Rank {i}: {name}, '
                          f'pLDDT={self.outs[name]["pLDDT"]:.2f}, '
                          f'pTM={self.outs[name]["pTMscore"]:.2f}')
 
