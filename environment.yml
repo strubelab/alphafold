@@ -9,9 +9,6 @@ channels:
 dependencies:
   - biopython
   - git
-  - jupyterlab
-  - jupyterlab-git
-  - jupyterlab-lsp
   - matplotlib
   - numpy
   - nodejs
