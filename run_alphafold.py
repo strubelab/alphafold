@@ -435,12 +435,16 @@ def main(argv):
       model_config.model.num_ensemble_eval = num_ensemble
       
       ## Change recycles
-      model_config.model.num_recycle = FLAGS.recycles
+      # model_config.model.num_recycle = FLAGS.recycles
+      # No longer necessary, since the multimer models will do up to 20 recycles
+      # unless stopped by a difference in pairwise distances less than 0.5
+      # See alphafold/model/config.py
 
     else:
       model_config.data.eval.num_ensemble = num_ensemble
 
       ## Change recycles
+      ## Two different values have to be changed. See alphafold/model/config.py
       model_config.data.common.num_recycle = FLAGS.recycles
       model_config.model.num_recycle = FLAGS.recycles
 

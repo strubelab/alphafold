@@ -155,6 +155,11 @@ CONFIG = ml_collections.ConfigDict({
             },
             'max_extra_msa': 1024,
             'msa_cluster_features': True,
+            # It seems that these values are used for preparing the features,
+            # in the function input_pipeline.process_tensors_from_config(),
+            # called by features.tf_example_to_features(),
+            # called by RunModel.process_features(),
+            # called by run_alphafold.predict_structure()
             'num_recycle': 3,
             'reduce_msa_clusters_by_max_templates': False,
             'resample_msa_in_recycling': True,
@@ -455,6 +460,11 @@ CONFIG = ml_collections.ConfigDict({
                 'weight': 2.0
             },
         },
+        # It seems that these values are used for running the model, called by
+        # modules.AlphaFold(), called by
+        # model.RunModel().apply(), called by
+        # model.RunModel().predict(), called by
+        # run_alphafold.predict_structure()
         'num_recycle': 3,
         'resample_msa_in_recycling': True
     },
