@@ -77,17 +77,24 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--mem", help=('Memory in GB to allocate to each job. '
         '(default="auto")'), type=validate_num, default='auto')
     
-    parser.add_argument("--recycles", help=('Number of times to recycle the '
+    parser.add_argument("--recycles", help=('Only for monomeric models. '
+                                    'Set the number of times to recycle the '
         'output through the network. More recycles might help to mildly '
         'improve the quality of the models in some cases. Default is 3, max '
-        'recommended is 10.'), type=validate_num, default=3)
+        'recommended is 10. Multimeric models run up to 20 recycles, but '
+        'will stop if the difference in pairwise distances is less than 0.5.'
+        ), type=validate_num, default=3)
 
     parser.add_argument("--cpus", help=("Number of CPUs to request. The MSA "
         "programs are set to use 8, which is the default here."),
         type=validate_num, default=8)
 
-    parser.add_argument("--no_relax", help=("Set this flag if you don't want "
-        "to run relaxation on the models."), action='store_false')
+    parser.add_argument("--models_to_relax", help=("The models to run the "
+                        "final relaxation step on. If `all`, all models are "
+                        "relaxed, which may be time consuming. If `best`, only "
+                        "the most confident model is relaxed. If `none`, "
+                        "relaxation is not run. Defaults to `best`."),
+                        default='best', choices=['all','best','none'])
 
     parser.add_argument("--use_precomputed_msas",
         help=("Set this flag if you want to reuse the MSA outputs from a "
@@ -124,7 +131,8 @@ if __name__ == '__main__':
 
     exe = AlphafoldIbex(sequences, out_dir=out_dir, recycles=args.recycles,
                     mem=args.mem, time_per_command=args.time, gpus=args.gpus,
-                    run_relax=args.no_relax, mail=args.mail, cpus=args.cpus,
+                    models_to_relax=args.models_to_relax, mail=args.mail,
+                    cpus=args.cpus,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     use_precomputed_msas=args.use_precomputed_msas,
                     gpu_type=args.gpu_type)

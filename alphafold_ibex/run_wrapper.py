@@ -29,7 +29,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 # Take the file with sequences and the output directory from the command-line inputs
 seqs_file = Path(sys.argv[1])
-run_relax = sys.argv[2] == 'True'
+models_to_relax = sys.argv[2]
 out_dir = Path(sys.argv[3])
 recycles = int(sys.argv[4])
 multimer_predictions_per_model = int(sys.argv[5])
@@ -44,7 +44,7 @@ with open(seqs_file, 'rb') as f:
 for seqs in sequences:
     try:
         exe = AlphaFold(seqs, out_dir=out_dir, recycles=recycles,
-                run_relax=run_relax,
+                models_to_relax=models_to_relax,
                 multimer_predictions_per_model=multimer_predictions_per_model,
                 use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")

@@ -34,7 +34,7 @@ class AlphaFold(Executor):
                  model_preset:str='monomer_ptm',
                  recycles:int=3,
                  db_preset:str='full_dbs',
-                 run_relax:bool=True,
+                 models_to_relax:str='best',
                  use_gpu_relax:bool=True,
                  max_template_date:str=date.today().isoformat(),
                  out_dir:Path=None,
@@ -93,7 +93,7 @@ class AlphaFold(Executor):
         self.recycles = recycles
         self.db_preset = db_preset
         self.max_template_date = max_template_date
-        self.run_relax = run_relax
+        self.models_to_relax = models_to_relax 
         self.use_gpu_relax = use_gpu_relax
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
@@ -152,7 +152,7 @@ class AlphaFold(Executor):
                 'obsolete.dat '
             f'--max_template_date={self.max_template_date} '
             f'--recycles={self.recycles} '
-            f'--run_relax={str(self.run_relax).lower()} '
+            f'--models_to_relax={self.models_to_relax} '
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
             f'--use_precomputed_msas={str(self.use_precomputed_msas).lower()} '
         ).split()

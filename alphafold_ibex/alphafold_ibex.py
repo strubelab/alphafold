@@ -16,8 +16,8 @@ class AlphafoldIbex(IbexRun):
 
     def __init__(self, sequences:list, out_dir:Path, time_per_command:int='auto',
         jobname:str='AlphafoldIbex', cpus:int=8, recycles:int=6, mem:int='auto',
-        gpus:int='auto', gpu_type:str='v100', run_relax:bool=True, mail:str=None,
-        multimer_predictions_per_model:int=5,
+        gpus:int='auto', gpu_type:str='v100', models_to_relax:str='best',
+        mail:str=None, multimer_predictions_per_model:int=5,
         use_precomputed_msas:bool=False, **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -55,7 +55,7 @@ class AlphafoldIbex(IbexRun):
         self.ncommands = len(sequences)
         self.cpus_per_task = cpus
         self.recycles = recycles
-        self.run_relax = run_relax
+        self.models_to_relax = models_to_relax
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
         self.gpu_type = gpu_type
@@ -141,7 +141,7 @@ class AlphafoldIbex(IbexRun):
         self.python_command = (
             f'{self.conda_env}/bin/python {self.python_file} '
             '${seq_file} '
-            f'{self.run_relax} {self.out_dir} {self.recycles} '
+            f'{self.models_to_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
             f'{self.use_precomputed_msas} {self.gpu_type}\n'
         )
