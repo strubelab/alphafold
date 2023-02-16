@@ -30,8 +30,8 @@ class AlphafoldIbexTest(unittest.TestCase):
         self.out_dir = self.tempdir
         self.out_ibex = self.out_dir / 'out_ibex'
         self.sequences_dir = self.out_dir / 'sequences'
-        self.recycles=3
-        self.run_relax=True
+        self.recycles=5
+        self.models_to_relax = 'best'
         self.multimer_predictions_per_model = 4
         self.use_precomputed_msas = True
         self.conda_env = Path(__file__).parent.parent / 'env'
@@ -44,7 +44,8 @@ class AlphafoldIbexTest(unittest.TestCase):
             tempdir=self.tempdir, jobname=self.jobname,
             recycles=self.recycles,
             multimer_predictions_per_model=self.multimer_predictions_per_model,
-            use_precomputed_msas=self.use_precomputed_msas)
+            use_precomputed_msas=self.use_precomputed_msas,
+            models_to_relax=self.models_to_relax)
     
 
     def test_sequences_written(self) -> None:
@@ -72,6 +73,14 @@ class AlphafoldIbexTest(unittest.TestCase):
         self.python_file = (Path(__file__).parent.parent.resolve()
                                 / 'alphafold_ibex'
                                 / 'run_wrapper.py')
+        
+        self.python_command = (
+            f'{self.conda_env}/bin/python {self.python_file} '
+            '${seq_file} '
+            f'{self.models_to_relax} {self.out_dir} {self.recycles} '
+            f'{self.multimer_predictions_per_model} '
+            f'{self.use_precomputed_msas} v100\n'
+        )
 
         self.script = (
             '#!/bin/bash -l\n'
@@ -79,6 +88,7 @@ class AlphafoldIbexTest(unittest.TestCase):
             f'#SBATCH --partition=batch\n'
             f'#SBATCH --job-name=AlphafoldIbex_unittest\n'
             f'#SBATCH --output={self.out_ibex}/%x.%j.out\n'
+            f'#SBATCH --error={self.out_ibex}/%x.%j.out\n'
             f'#SBATCH --time=02:00:00\n'
             '#SBATCH --mem=64G\n'
             '#SBATCH --gres=gpu:1\n'
@@ -86,7 +96,7 @@ class AlphafoldIbexTest(unittest.TestCase):
             f'#SBATCH --constraint=[v100]\n'
             f'#SBATCH --array=0-2\n'
             '\n'
-            f'module load alphafold/2.1.1/python3_jupyter cuda/11.2.2\n'
+            f'module load alphafold/2.3.1/python3\n'
             'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
             'export TF_FORCE_UNIFIED_MEMORY=1\n'
             'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'
@@ -96,11 +106,8 @@ class AlphafoldIbexTest(unittest.TestCase):
             '\n'
             f'seq_file="{self.sequences_dir.resolve()}/'
             'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
-            f'time {self.conda_env}/bin/python {self.python_file} '
-            '${seq_file} '
-            f'{str(self.run_relax)} {self.out_dir} {self.recycles} '
-            f'{self.multimer_predictions_per_model} '
-            f'{self.use_precomputed_msas}\n'
+            f'echo "{self.python_command}"\n'
+            f'time {self.python_command}\n'
         )
 
         self.assertEqual(self.script, self.alphafoldibex.script)
