@@ -104,7 +104,7 @@ class AlphafoldIbex(IbexRun):
             self.time_per_command = 600
         else:
             self.gpus = 1
-            self.mem = 256
+            self.mem = 128
             self.time_per_command = 1440
 
 
