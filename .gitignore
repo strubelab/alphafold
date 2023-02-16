@@ -5,3 +5,4 @@ env_vislab
 runs
 .ipynb_checkpoints
 *.egg-info
+.virtual_documents

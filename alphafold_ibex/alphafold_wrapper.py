@@ -133,37 +133,38 @@ class AlphaFold(Executor):
         self.args = (
             f'python3 '
             f'{self.ALPHAFOLD_SCRIPT} '
+            f'--fasta_paths={self.fasta_path} '
             f'--data_dir={self.ALPHAFOLD_DATA} '
             f'--output_dir={self.out_dir} '
-            f'--fasta_paths={self.fasta_path} '
-            f'--db_preset={self.db_preset} '
-            f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
-                'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt '
-            f'--uniclust30_database_path={self.ALPHAFOLD_DATA}/uniclust30/'
-                'uniclust30_2018_08/uniclust30_2018_08 '
             f'--uniref90_database_path={self.ALPHAFOLD_DATA}/uniref90/'
                 'uniref90.fasta '
             f'--mgnify_database_path={self.ALPHAFOLD_DATA}/mgnify/'
                 'mgy_clusters_2018_12.fa '
+            f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
+                'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt '
+            f'--uniref30_database_path={self.ALPHAFOLD_DATA}/uniref30/'
+                'UniRef30_2021_03 '
             f'--template_mmcif_dir={self.ALPHAFOLD_DATA}/pdb_mmcif/'
                 'mmcif_files '
-            f'--model_preset={self.model_preset} '
+            f'--max_template_date={self.max_template_date} '
             f'--obsolete_pdbs_path={self.ALPHAFOLD_DATA}/pdb_mmcif/'
                 'obsolete.dat '
-            f'--max_template_date={self.max_template_date} '
-            f'--recycles={self.recycles} '
+            f'--db_preset={self.db_preset} '
+            f'--model_preset={self.model_preset} '
+            f'--use_precomputed_msas={str(self.use_precomputed_msas).lower()} '
             f'--models_to_relax={self.models_to_relax} '
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
-            f'--use_precomputed_msas={str(self.use_precomputed_msas).lower()} '
+            f'--recycles={self.recycles} '
         ).split()
 
         if 'multimer' in self.model_preset:
             self.args = self.args + (
-                f'--num_multimer_predictions_per_model={self.multimer_predictions_per_model} '
                 f'--uniprot_database_path={self.ALPHAFOLD_DATA}/uniprot/'
                     'uniprot.fasta '
                 f'--pdb_seqres_database_path={self.ALPHAFOLD_DATA}/pdb_seqres/'
                     'pdb_seqres.txt'
+                f'--num_multimer_predictions_per_model={self.multimer_predictions_per_model} '
+                
             ).split()
         
         else:
