@@ -8,7 +8,7 @@ import argparse
 from Bio import SeqIO
 from pathlib import Path
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
-
+import sys
 
 def validate_file(input:str) -> Path:
         """
@@ -52,6 +52,22 @@ def parsing(args: list=None) -> argparse.Namespace:
             return num
         
         return int(num)
+    
+    def validate_out(d:str):
+        """
+        Validate that the output directory exists
+
+        Args:
+            d (str): destination directory
+
+        Returns:
+            _type_: _description_
+        """
+        d = Path(d)
+        if not d.exists():
+            d.mkdir()
+            
+        return d
 
     parser = argparse.ArgumentParser(description=('Takes one or more FASTA '
         'files with amino acid sequences (one for each model), and submits a '
@@ -65,7 +81,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Path for saving the resulting AlphaFold models. It will create '
         'one subdirectory for each model. Also will contain the sequence files ' 
         'as they were submitted to ibex, the script that was submitted and the '
-        'ibex stdout files.'), required=True)
+        'ibex stdout files.'), required=True, type=validate_out)
 
     parser.add_argument("--gpus", help=('Number of GPUs to request to ibex. '
         'It is likely that AlphaFold only ever uses 1. (default=1)'),
@@ -123,11 +139,15 @@ def parsing(args: list=None) -> argparse.Namespace:
 if __name__ == '__main__':
 
     args = parsing()
-
+    
     files_input = [validate_file(f) for f in args.input]
     sequences = [list(SeqIO.parse(f, 'fasta')) for f in files_input]
 
-    out_dir = Path(args.destination)
+    out_dir = args.destination
+    
+    # Save command to output dir
+    with open(out_dir/'command.txt', 'w') as f:
+        f.write(' '.join(sys.argv))
 
     exe = AlphafoldIbex(sequences, out_dir=out_dir, recycles=args.recycles,
                     mem=args.mem, time_per_command=args.time, gpus=args.gpus,
