@@ -29,18 +29,18 @@ class AlphafoldTest(unittest.TestCase):
         self.max_template_date = date.today().isoformat()
         self.recycles = 6
         self.run_relax = True
-        self.models_to_relax = 'all'
         self.multimer_predictions_per_model = 4
         self.use_precomputed_msas = True
-
-        self.fasta_path = (self.out_dir / f'{self.SeqRec.name}-1' /
-                           f'{self.SeqRec.name}-1.fasta')
 
 
     def test_command_monomer(self):
         """
         Test that the proper command is created in the __init__ method
         """
+        self.fasta_path = (self.out_dir / f'{self.SeqRec.name}-1' /
+                           f'{self.SeqRec.name}-1.fasta')
+
+        self.models_to_relax = 'all'
         self.model_preset = 'monomer_ptm'
         self.alphafold = AlphaFold([self.SeqRec],
                             out_dir=self.out_dir, recycles=self.recycles,
@@ -82,10 +82,13 @@ class AlphafoldTest(unittest.TestCase):
         """
         Test that the proper command is created in the __init__ method
         """
+        self.fasta_path = (self.out_dir / f'{self.SeqRec.name}-3' /
+                           f'{self.SeqRec.name}-3.fasta')
 
+        self.models_to_relax = 'best'
         self.model_preset = 'multimer'
         self.multimer_predictions_per_model = 4
-        self.alphafold = AlphaFold([self.SeqRec],
+        self.alphafold = AlphaFold([self.SeqRec]*3,
                             out_dir=self.out_dir, recycles=self.recycles,
                             keep_tempdir=True,
                             use_precomputed_msas=self.use_precomputed_msas,
@@ -131,6 +134,17 @@ class AlphafoldTest(unittest.TestCase):
         """
         Test that the prepare method creates the input fasta file
         """
+        self.fasta_path = (self.out_dir / f'{self.SeqRec.name}-1' /
+                           f'{self.SeqRec.name}-1.fasta')
+
+        self.models_to_relax = 'best'
+        self.model_preset = 'monomer_ptm'
+        self.alphafold = AlphaFold([self.SeqRec],
+                            out_dir=self.out_dir, recycles=self.recycles,
+                            keep_tempdir=True,
+                            models_to_relax=self.models_to_relax,
+                            use_precomputed_msas=self.use_precomputed_msas)
+
         self.alphafold.prepare()
 
         self.assertTrue(self.fasta_path.is_file())

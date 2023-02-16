@@ -15,11 +15,11 @@ from matplotlib import pyplot as plt
 
 from executor.executor import Executor
 
-from utils import define_homooligomers
-from utils import process_outputs
+from alphafold_ibex.utils import define_homooligomers
+from alphafold_ibex.utils import process_outputs
 
-from property_plotting import plot_paes, plot_adjs, plot_dists, plot_plddts
-from structure_plotting import plot_protein
+from alphafold_ibex.property_plotting import plot_paes, plot_adjs, plot_dists, plot_plddts
+from alphafold_ibex.structure_plotting import plot_protein
 
 import logging
 
