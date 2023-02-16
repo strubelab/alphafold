@@ -161,7 +161,7 @@ class AlphafoldIbex(IbexRun):
             f'#SBATCH --array=0-{self.njobs-1}\n'
             f'{self.mail_string}'
             '\n'
-            f'module load alphafold/2.1.1/python3_jupyter cuda/11.2.2\n'
+            f'module load alphafold/2.3.1/python3\n'
             'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
             'export TF_FORCE_UNIFIED_MEMORY=1\n'
             'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'
