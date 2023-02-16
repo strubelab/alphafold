@@ -139,7 +139,7 @@ class AlphaFold(Executor):
             f'--uniref90_database_path={self.ALPHAFOLD_DATA}/uniref90/'
                 'uniref90.fasta '
             f'--mgnify_database_path={self.ALPHAFOLD_DATA}/mgnify/'
-                'mgy_clusters_2018_12.fa '
+                'mgy_clusters_2022_05.fa '
             f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
                 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt '
             f'--uniref30_database_path={self.ALPHAFOLD_DATA}/uniref30/'
@@ -163,8 +163,8 @@ class AlphaFold(Executor):
                     'uniprot.fasta '
                 f'--pdb_seqres_database_path={self.ALPHAFOLD_DATA}/pdb_seqres/'
                     'pdb_seqres.txt'
-                f'--num_multimer_predictions_per_model={self.multimer_predictions_per_model} '
-                
+                f'--num_multimer_predictions_per_model='
+                f'{self.multimer_predictions_per_model} '
             ).split()
         
         else:
