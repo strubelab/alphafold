@@ -15,11 +15,11 @@ from matplotlib import pyplot as plt
 
 from executor.executor import Executor
 
-from alphafold_ibex.utils import define_homooligomers
-from alphafold_ibex.utils import process_outputs
+from utils import define_homooligomers
+from utils import process_outputs
 
-from alphafold_ibex.property_plotting import plot_paes, plot_adjs, plot_dists, plot_plddts
-from alphafold_ibex.structure_plotting import plot_protein
+from property_plotting import plot_paes, plot_adjs, plot_dists, plot_plddts
+from structure_plotting import plot_protein
 
 import logging
 
@@ -136,8 +136,6 @@ class AlphaFold(Executor):
             f'--fasta_paths={self.fasta_path} '
             f'--data_dir={self.ALPHAFOLD_DATA} '
             f'--output_dir={self.out_dir} '
-            f'--uniref90_database_path={self.ALPHAFOLD_DATA}/uniref90/'
-                'uniref90.fasta '
             f'--mgnify_database_path={self.ALPHAFOLD_DATA}/mgnify/'
                 'mgy_clusters_2022_05.fa '
             f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
@@ -162,7 +160,7 @@ class AlphaFold(Executor):
                 f'--uniprot_database_path={self.ALPHAFOLD_DATA}/uniprot/'
                     'uniprot.fasta '
                 f'--pdb_seqres_database_path={self.ALPHAFOLD_DATA}/pdb_seqres/'
-                    'pdb_seqres.txt'
+                    'pdb_seqres.txt '
                 f'--num_multimer_predictions_per_model='
                 f'{self.multimer_predictions_per_model} '
             ).split()
@@ -240,7 +238,7 @@ class AlphaFold(Executor):
 
         # Plot properties
         self.plots_dir = self.out_model / 'plots'
-        self.plots_dir.mkdir()
+        self.plots_dir.mkdir(exist_ok=True)
 
         plot_paes([self.outs[k]["pae"] for k in self.model_rank],
                   chain_breaks=self.chain_breaks, dpi=200,
