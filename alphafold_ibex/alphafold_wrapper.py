@@ -136,6 +136,8 @@ class AlphaFold(Executor):
             f'--fasta_paths={self.fasta_path} '
             f'--data_dir={self.ALPHAFOLD_DATA} '
             f'--output_dir={self.out_dir} '
+            f'--uniref90_database_path={self.ALPHAFOLD_DATA}/uniref90/'
+                'uniref90.fasta '
             f'--mgnify_database_path={self.ALPHAFOLD_DATA}/mgnify/'
                 'mgy_clusters_2022_05.fa '
             f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
