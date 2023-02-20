@@ -59,6 +59,12 @@ class AlphafoldIbex(IbexRun):
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
         self.gpu_type = gpu_type
+
+        if self.gpu_type == 'a100':
+            self.reservation_string = '#SBATCH --reservation=A100\n'
+        else:
+            self.reservation_string = ''
+            
         if mail:
             self.mail_string = (f'#SBATCH --mail-user={mail}\n'
                                 f'#SBATCH --mail-type=ALL\n')
@@ -159,6 +165,7 @@ class AlphafoldIbex(IbexRun):
             f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
             f'#SBATCH --constraint=[{self.gpu_type}]\n'
             f'#SBATCH --array=0-{self.njobs-1}\n'
+            f'{self.reservation_string}'
             f'{self.mail_string}'
             '\n'
             f'module load alphafold/2.3.1/python3\n'
