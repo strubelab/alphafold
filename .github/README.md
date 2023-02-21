@@ -90,10 +90,15 @@ Follow these steps to install your instance of AlphaFold in Ibex:
     cd alphafold
     ```
 
-4. Create a virtual environmnet to work on, and activate it. This step will take 15-30 minutes, so make sure you don't lose your connection to ibex:
+4. Create a virtual environmnet to work on, and activate it. This step will take 15-30 minutes, so make sure you don't lose your connection to ibex.
 
     ```bash
     conda env create --prefix ./env --file environment.yml
+    ```
+
+    Once the environment is created, make sure to activate it afterwards:
+
+    ```
     conda activate ./env
     ```
 
@@ -104,51 +109,43 @@ Follow these steps to install your instance of AlphaFold in Ibex:
     pip install -e .
     ```
 
-6. Done! The alphafold wrapper should be installed now. Check that you can access the `alphafold_wrapper` command by running **`alphafold_wrapper --help`**
+6. Done! The alphafold wrapper should be installed now. Check that you can use the `alphafold_wrapper` command by running **`alphafold_wrapper --help`**
 
     ```
-    alphafold_wrapper --help
+    usage: alphafold_wrapper [-h] [--input INPUT [INPUT ...]] --destination DESTINATION [--gpus GPUS] [--time TIME] [--mem MEM] [--recycles RECYCLES] [--cpus CPUS]
+                         [--models_to_relax {all,best,none}] [--use_precomputed_msas] [--mail MAIL] [--multimer_predictions_per_model MULTIMER_PREDICTIONS_PER_MODEL]
+                         [--gpu_type {v100,a100}]
 
-    usage: alphafold_wrapper [-h] [--input INPUT [INPUT ...]] --destination DESTINATION [--gpus GPUS]
-                            [--time TIME] [--mem MEM] [--recycles RECYCLES] [--cpus CPUS]
-                            [--no_relax] [--use_precomputed_msas] [--mail MAIL]
-                            [--multimer_predictions_per_model MULTIMER_PREDICTIONS_PER_MODEL]
-
-    Takes one or more FASTA files with amino acid sequences (one for each model), and submits a job
-    array to ibex to run AlphaFold on each file.
+    Takes one or more FASTA files with amino acid sequences (one for each model), and submits a job array to ibex to run AlphaFold on each file.
 
     options:
       -h, --help            show this help message and exit
       --input INPUT [INPUT ...]
-                            Fasta file(s) with the sequence(s) to model. Provide one fasta file for
-                            each model that you want to produce.
+                            Fasta file(s) with the sequence(s) to model. Provide one fasta file for each model that you want to produce.
       --destination DESTINATION
-                            Path for saving the resulting AlphaFold models. It will create one
-                            subdirectory for each model. Also will contain the sequence files as they
-                            were submitted to ibex, the script that was submitted and the ibex stdout
-                            files.
-      --gpus GPUS           Number of GPUs to request to ibex. It is likely that AlphaFold only ever
-                            uses 1. (default=1)
+                            Path for saving the resulting AlphaFold models. It will create one subdirectory for each model. Also will contain the sequence files as they were submitted to
+                            ibex, the script that was submitted and the ibex stdout files.
+      --gpus GPUS           Number of GPUs to request to ibex. It is likely that AlphaFold only ever uses 1. (default=1)
       --time TIME           Time in minutes to give to each job. (default="auto")
       --mem MEM             Memory in GB to allocate to each job. (default="auto")
-      --recycles RECYCLES   Number of times to recycle the output through the network. More recycles
-                            might help to mildly improve the quality of the models in some cases.
-                            Default is 3, max recommended is 10.
-      --cpus CPUS           Number of CPUs to request. The MSA programs are set to use 8, which is the
-                            default here.
-      --no_relax            Set this flag if you don't want to run relaxation on the models.
+      --recycles RECYCLES   Only for monomeric models. Set the number of times to recycle the output through the network. More recycles might help to mildly improve the quality of the
+                            models in some cases. Default is 3, max recommended is 10. Multimeric models run up to 20 recycles, but will stop if the difference in pairwise distances is less
+                            than 0.5.
+      --cpus CPUS           Number of CPUs to request. The MSA programs are set to use 8, which is the default here.
+      --models_to_relax {all,best,none}
+                            The models to run the final relaxation step on. If `all`, all models are relaxed, which may be time consuming. If `best`, only the most confident model is
+                            relaxed. If `none`, relaxation is not run. Defaults to `best`.
       --use_precomputed_msas
-                            Set this flag if you want to reuse the MSA outputs from a previous run,
-                            for example if there was an error after the MSA step and you want to start
-                            the same run again, or if you want to make the same model but with a
-                            different number of recycles. Make sure to copy the old results to a new
-                            directory if you don't want to overwrite them.
+                            Set this flag if you want to reuse the MSA outputs from a previous run, for example if there was an error after the MSA step and you want to start the same run
+                            again, or if you want to make the same model but with a different number of recycles. Make sure to copy the old results to a new directory if you don't want to
+                            overwrite them.
       --mail MAIL           Email to send notifications about the job progess in ibex.
       --multimer_predictions_per_model MULTIMER_PREDICTIONS_PER_MODEL
-                            Number of multimeric predictions to make per each of the 5 ML models that
-                            AlphaFold runs. The total number of structures predicted will be 5 times
-                            this number (e.g. `--multimer_predictions_per_model 5` will give 25
-                            structures in total). Defaults to 1.
+                            Number of multimeric predictions to make for each of the 5 ML models that AlphaFold runs. The total number of structures (pdb files) predicted will be 5 times
+                            this number (e.g. `--multimer_predictions_per_model 5` will give 25 structures in total). Defaults to 1. NOTE: if you indicate more than 1, you might have to
+                            increase the time to be requested with the --time argument as well.
+      --gpu_type {v100,a100}
+                            Whether to use V100 or A100 GPU. If you don't know what this is, leave the default. (Default=v100)
     ```
 
 # Usage
@@ -169,7 +166,7 @@ Follow these steps to install your instance of AlphaFold in Ibex:
     A. Make one or multiple models from scratch:
 
       ```bash
-      alphafold_wrapper --input ./data/model1.fasta data/model2.fasta --destination ./results --recycles 6 --mail your.email@kaust.edu.sa
+      alphafold_wrapper --input ./data/model1.fasta data/model2.fasta --destination ./results --recycles 6 --mail your.email@kaust.edu.sa --models_to_relax all
       ```
 
       - `--input` : One or more fasta files for modeling. One modeling job will be launched for each fasta file separately. If you want to model a multimer, give all the fasta sequences of the multimeric chains in the same file. For example, if you want to make a complex A2B3 (two subunits of chain A and 3 subunits of chain B), the fasta file will look like this:
@@ -189,9 +186,17 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
       - `--destination` : The directory where the outputs will be saved. One directory will be created inside for each fasta file provided in `--input`.
 
-      - `--recycles` : Number of times to recycle the output through AlphaFold. 3 is the default.
+        *<span style="background-color:yellow;color:black">NOTE:</span> You have to give a different `--destination` directory for each time you run alphafold, or otherwise the previous files might get overwritten.*
 
-      - `--mail` : Email to receive notifications from ibex about the job status
+      - `--recycles` : Number of times to recycle the output through AlphaFold. 3 is the default. This argument only works for monomers.
+
+        *For multimeric models, alphafold will do up to 20 recycles with a possible early stop when the difference in pairwise distances is less than 0.5 (Angstroms, I believe).*
+
+      - `--mail` : Email to receive notifications from ibex about the job status.
+      
+        *Your email is only written to the script that is submitted to ibex, found in `destination_directory/out_ibex/script.sh` , and is not saved or recorded anywhere else.*
+
+      - `--models_to_relax` : New in version 2.3.1, this argument allows you to perform relaxation only for the highest-confidence model ("`best`"), all models ("`all`"), or no models ("`none`") to speed up the execution. Default is "`best`".
 
 
     B. Make a model reusing the MSAs from another run:
@@ -205,10 +210,10 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 3. Check the job status:
 
     ```bash
-    $ squeue -u [user_name]
+    squeue -u [user_name]
     ```
    
-   When the job is finished (you can't see it in the list when running the previous command), look at the output folder and confirm that all the files are present:
+   When the job is finished (you can't see it in the list when running the previous command), look at the destination folder and confirm that all the files are present:
 
     ```
     ls -lh results/
@@ -306,7 +311,7 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
       - The `pdb` models (`ranked*.pdb` and `relaxed*.pdb`).
 
-      - A `plots` directory with plots of the different quality scores. The model ranking in these plots is done with the pLDDT scores, and the names correspond to the models called `relaxed_model_*.pdb`.
+      - A `plots` directory with plots of the different quality scores. The model ranking in these plots is done with the pLDDT scores for monomers, or the PTM score for multimers (actually a combination of interface-PTM and PTM). These rankings are the same as for the models called `ranked_#.pdb`, and the names in the plots' headings correspond to the models in `relaxed_model_#_ptm_pred_0.pdb`.
     
 
 
@@ -319,7 +324,6 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
 <img src='../doc/pyk2/rank_1_model_5_ptm.png'>
 
-Note: some times there are discrepancies between the model ranking given by AlphaFold (structures named `ranked_*.pdb`), and the ranking indicated here, obtained by averaging the pLDDT scores. You should probably compare both. The `ranking_debug.json` file contains the names of the models from AlphaFold that correspond to the `ranked_[01234].pdb` files.
 
 ### Predicted aligned error:
 Metric for assessing inter-domain accuracy. See the full explanation at the bottom of every entry in the AF database (e.g. https://alphafold.ebi.ac.uk/entry/Q5VSL9)
@@ -350,7 +354,7 @@ The numbers in parenthesis are the average pLDDTs for the whole sequence.
 
 ### PDB structures
 
-The ones you want to look at will be `relaxed_model_*.pdb` and/or `ranked_*.pdb`
+The ones you want to look at will be `ranked_*.pdb`.
 
 
 ## Troubleshooting / FAQs
