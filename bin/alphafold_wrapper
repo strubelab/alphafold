@@ -124,10 +124,12 @@ def parsing(args: list=None) -> argparse.Namespace:
                 'job progess in ibex.'), type=str)
 
     parser.add_argument("--multimer_predictions_per_model", help=('Number of '
-        'multimeric predictions to make per each of the 5 ML models that '
-        'AlphaFold runs. The total number of structures predicted will be 5 '
+        'multimeric predictions to make for each of the 5 ML models that '
+        'AlphaFold runs. The total number of structures (pdb files) predicted will be 5 '
         'times this number (e.g. `--multimer_predictions_per_model 5` will '
-        'give 25 structures in total). Defaults to 1.'), type=int, default=1)
+        'give 25 structures in total). Defaults to 1. NOTE: if you indicate '
+        'more than 1, you might have to increase the time to be requested with '
+        'the --time argument as well.'), type=int, default=1)
     
     parser.add_argument("--gpu_type", help=("Whether to use V100 or A100 GPU."
         " If you don't know what this is, leave the default. (Default=v100)"),
