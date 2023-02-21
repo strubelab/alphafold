@@ -1,3 +1,13 @@
+
+# Table of contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Results](#results)
+- [Updating Alphafold](#updating-alphafold)
+- [Troubleshooting](#troubleshooting)
+
 # Prerequisites
 
 This is not meant to be an exhaustive guide on how to use ibex and a linux terminal, so if you're completely unfamiliar with these concepts, I recommend you to take a look at the following resources first:
@@ -315,7 +325,7 @@ Follow these steps to install your instance of AlphaFold in Ibex:
     
 
 
-# Results
+## Results
 ### Protein 2D plots
 
 2D pictures of the proteins colored by pLDDT score, indicating the rank and the model name.
@@ -357,7 +367,22 @@ The numbers in parenthesis are the average pLDDTs for the whole sequence.
 The ones you want to look at will be `ranked_*.pdb`.
 
 
-## Troubleshooting / FAQs
+# Updating AlphaFold
+
+I make modifications to the code in the wrapper every now and then, also to integrate DeepMind's latest updates to AlphaFold. So, if it's been a while since you downloaded it, I recommend running the following commands to update your installation.
+
+While inside the `alphafold` directory run:
+
+```
+conda activate ./env
+git pull
+pip install -e .
+```
+
+Done! You should have the latest version now and can use it as usual.
+
+
+# Troubleshooting
 
 - I don't see my job when typing `squeue -u [my_username]` in Ibex, and the output directory is empty/doesn't have all the files with the results.
 
