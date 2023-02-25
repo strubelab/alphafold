@@ -42,6 +42,7 @@ class AlphaFold(Executor):
                  multimer_predictions_per_model:int=5,
                  use_precomputed_msas:bool=False,
                  gpu_type:str='v100',
+                 old_uniclust:bool=False,
                  **kw):
         """
         Instantiate variables
@@ -79,7 +80,7 @@ class AlphaFold(Executor):
             self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA'])
         else:
             self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA_A100'])
-            
+        self.OLD_UNICLUST = Path(config['user.env']['OLD_UNICLUST'])
         self.ALPHAFOLD_SCRIPT = Path(__file__).parent.parent / 'run_alphafold.py'
 
         self.SeqRecs = sequences if isinstance(sequences, list) else [sequences]
@@ -97,6 +98,12 @@ class AlphaFold(Executor):
         self.use_gpu_relax = use_gpu_relax
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
+        self.old_uniclust = old_uniclust
+        
+        if not self.old_uniclust:
+            self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
+        else:
+            self.uniref30 = self.OLD_UNICLUST
 
         if len(self.SeqRecs) > 1:
             self.model_preset = 'multimer'
@@ -142,8 +149,7 @@ class AlphaFold(Executor):
                 'mgy_clusters_2022_05.fa '
             f'--bfd_database_path={self.ALPHAFOLD_DATA}/bfd/'
                 'bfd_metaclust_clu_complete_id30_c90_final_seq.sorted_opt '
-            f'--uniref30_database_path={self.ALPHAFOLD_DATA}/uniref30/'
-                'UniRef30_2021_03 '
+            f'--uniref30_database_path={self.uniref30} '
             f'--template_mmcif_dir={self.ALPHAFOLD_DATA}/pdb_mmcif/'
                 'mmcif_files '
             f'--max_template_date={self.max_template_date} '

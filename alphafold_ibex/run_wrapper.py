@@ -35,6 +35,7 @@ recycles = int(sys.argv[4])
 multimer_predictions_per_model = int(sys.argv[5])
 use_precomputed_msas = sys.argv[6] == 'True'
 gpu_type = sys.argv[7]
+old_uniclust = sys.argv[8] == 'True'
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
@@ -46,7 +47,8 @@ for seqs in sequences:
         exe = AlphaFold(seqs, out_dir=out_dir, recycles=recycles,
                 models_to_relax=models_to_relax,
                 multimer_predictions_per_model=multimer_predictions_per_model,
-                use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type)
+                use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type,
+                old_uniclust=old_uniclust)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

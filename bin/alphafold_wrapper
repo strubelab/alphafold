@@ -134,6 +134,10 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--gpu_type", help=("Whether to use V100 or A100 GPU."
         " If you don't know what this is, leave the default. (Default=v100)"),
         default='v100', choices=['v100','a100'])
+    
+    parser.add_argument("--old_uniclust",
+        help=("Use the older version of UniClust database (uniclust30_2018_08) "
+              "to calculate the MSAs with HHblits."), action='store_true')
  
     return parser.parse_args(args)
 
@@ -157,5 +161,5 @@ if __name__ == '__main__':
                     cpus=args.cpus,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     use_precomputed_msas=args.use_precomputed_msas,
-                    gpu_type=args.gpu_type)
+                    gpu_type=args.gpu_type, old_uniclust=args.old_uniclust)
     exe.run()

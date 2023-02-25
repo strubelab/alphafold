@@ -18,7 +18,7 @@ class AlphafoldIbex(IbexRun):
         jobname:str='AlphafoldIbex', cpus:int=8, recycles:int=6, mem:int='auto',
         gpus:int='auto', gpu_type:str='v100', models_to_relax:str='best',
         mail:str=None, multimer_predictions_per_model:int=5,
-        use_precomputed_msas:bool=False, **kw):
+        use_precomputed_msas:bool=False, old_uniclust:bool=False, **kw):
         """
         Defines the variables for the ibex job array to run Program.
 
@@ -59,6 +59,7 @@ class AlphafoldIbex(IbexRun):
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
         self.gpu_type = gpu_type
+        self.old_uniclust = old_uniclust
 
         if self.gpu_type == 'a100':
             self.reservation_string = '#SBATCH --reservation=A100\n'
@@ -149,7 +150,7 @@ class AlphafoldIbex(IbexRun):
             '${seq_file} '
             f'{self.models_to_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
-            f'{self.use_precomputed_msas} {self.gpu_type}\n'
+            f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust}\n'
         )
 
         self.script = (
