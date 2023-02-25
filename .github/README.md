@@ -156,6 +156,7 @@ Follow these steps to install your instance of AlphaFold in Ibex:
                             increase the time to be requested with the --time argument as well.
       --gpu_type {v100,a100}
                             Whether to use V100 or A100 GPU. If you don't know what this is, leave the default. (Default=v100)
+      --old_uniclust        Use the older version of UniClust database (uniclust30_2018_08) to calculate the MSAs with HHblits.
     ```
 
 # Usage
