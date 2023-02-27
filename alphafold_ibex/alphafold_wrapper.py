@@ -277,4 +277,5 @@ class AlphaFold(Executor):
                 plt.close()
             except:
                 logging.error(f"Could not generate protein plot for {name}...")
-    
+                raise
+
