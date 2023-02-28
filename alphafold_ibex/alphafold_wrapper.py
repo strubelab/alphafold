@@ -100,7 +100,7 @@ class AlphaFold(Executor):
         self.use_precomputed_msas = use_precomputed_msas
         self.old_uniclust = old_uniclust
         
-        if not self.old_uniclust:
+        if (not self.old_uniclust) and (gpu_type=='v100'):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
         else:
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
