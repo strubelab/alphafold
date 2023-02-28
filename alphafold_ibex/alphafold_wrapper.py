@@ -80,7 +80,7 @@ class AlphaFold(Executor):
             self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA'])
         else:
             self.ALPHAFOLD_DATA = Path(config['user.env']['AF_DATA_A100'])
-        self.OLD_UNICLUST = Path(config['user.env']['OLD_UNICLUST'])
+
         self.ALPHAFOLD_SCRIPT = Path(__file__).parent.parent / 'run_alphafold.py'
 
         self.SeqRecs = sequences if isinstance(sequences, list) else [sequences]
@@ -101,9 +101,9 @@ class AlphaFold(Executor):
         self.old_uniclust = old_uniclust
         
         if not self.old_uniclust:
-            self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
+            self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
         else:
-            self.uniref30 = self.OLD_UNICLUST
+            self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
 
         if len(self.SeqRecs) > 1:
             self.model_preset = 'multimer'
