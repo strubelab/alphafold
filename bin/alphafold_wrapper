@@ -162,7 +162,7 @@ def parsing(args: list=None) -> argparse.Namespace:
     
     parser.add_argument("--max_template_date",
         help=('Maximum template release date to consider. Give value in '
-              '"YYYY-MM-DD" format.'), type=validate_date,
+              'YYYY-MM-DD format.'), type=validate_date,
         default=date.today().isoformat())
  
     return parser.parse_args(args)
