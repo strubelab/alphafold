@@ -7,6 +7,7 @@ Script to run the wrapper from the command line
 import argparse
 from Bio import SeqIO
 from pathlib import Path
+from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 import sys
 
@@ -67,6 +68,24 @@ def parsing(args: list=None) -> argparse.Namespace:
         if not d.exists():
             d.mkdir()
             
+        return d
+    
+    def validate_date(d:str):
+        """
+        Validate the date format
+
+        Args:
+            d (str): date in YYYY-MM-DD format
+
+        Returns:
+            str: same date if valid
+        """
+        dsplit = d.split('-')
+        if len(dsplit) < 3:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        elif int(dsplit[1]) > 12:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        
         return d
 
     parser = argparse.ArgumentParser(description=('Takes one or more FASTA '
@@ -140,6 +159,11 @@ def parsing(args: list=None) -> argparse.Namespace:
               "not find ### match states in sequence 1 of ##########`, try "
               "using the older version of the UniClust database (UniRef30_2021_03) "
               "to calculate the MSAs with HHblits."), action='store_true')
+    
+    parser.add_argument("--max_template_date",
+        help=('Maximum template release date to consider. Give value in '
+              '"YYYY-MM-DD" format.'), type=validate_date,
+        default=date.today().isoformat())
  
     return parser.parse_args(args)
 
@@ -163,5 +187,6 @@ if __name__ == '__main__':
                     cpus=args.cpus,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     use_precomputed_msas=args.use_precomputed_msas,
-                    gpu_type=args.gpu_type, old_uniclust=args.old_uniclust)
+                    gpu_type=args.gpu_type, old_uniclust=args.old_uniclust,
+                    max_template_date=args.max_template_date)
     exe.run()
