@@ -32,9 +32,13 @@ This is not meant to be an exhaustive guide on how to use ibex and a linux termi
 
 - How do I transfer files between ibex and my computer?
 
-  To connect to ibex through the Finder application (Mac only), go to the menu `Go -> Connect to Server...` , and then write the address to ibex in the text field: `smb://samba.ibex.kaust.edu.sa` and press Connect. Then select from the list `ibex_scratch` to connect to your scratch directory in ibex. You can now drag and drop files between ibex and your local storage, create and delete directories, etc.
+  Since the update to WekaIO file system it is not possible to connect to ibex through the Finder application, so you will have to transfer files from your local terminal to the destination in ibex with either the scp or rsync commands.
 
-  For connecting in a Windows computer, you could try a tutorial such as the [following](https://www.techrepublic.com/article/how-to-connect-to-linux-samba-shares-from-windows-10/) (haven't tried it myself), or contact ibex@hpc.kaust.edu.sa for instructions.
+  Example:
+
+  ```bash
+  rsync -trvhP /local/path/to/fasta/sequence.fasta <username>@glogin.ibex.kaust.edu.sa:/ibex/user/<username>/path/to/store/sequence.fasta
+  ```
 
 
 # Installation
@@ -86,10 +90,10 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
    For logging in on Windows, you need an ssh client application such as [PuTTY](https://www.putty.org/).
 
-2. Go to your scratch directory:
+2. Go to your user directory:
 
     ```bash
-    cd /ibex/scratch/[your_username]/
+    cd /ibex/user/[your_username]/
     ```
 
 3. Clone the following repositories, and then `cd` into the `alphafold` directory.
@@ -165,7 +169,7 @@ Follow these steps to install your instance of AlphaFold in Ibex:
 
     ```bash
     ssh [your_username]@glogin.ibex.kaust.edu.sa
-    cd /ibex/scratch/[your_username]/alphafold  # the exact location might vary depending 
+    cd /ibex/user/[your_username]/alphafold  # the exact location might vary depending 
                                                 # on where you cloned the repository
     conda activate ./env
     ```
