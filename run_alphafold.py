@@ -163,6 +163,7 @@ RELAX_MAX_OUTER_ITERATIONS = 3
 def _check_flag(flag_name: str,
                 other_flag_name: str,
                 should_be_set: bool):
+  """Checks the values of two flags that are dependent on each other."""
   if should_be_set != bool(FLAGS[flag_name].value):
     verb = 'be' if should_be_set else 'not be'
     raise ValueError(f'{flag_name} must {verb} set when running with '
@@ -353,6 +354,7 @@ def main(argv):
   _check_flag('uniref30_database_path', 'db_preset',
               should_be_set=not use_small_bfd)
 
+  # Check for flags specific for multimer system
   run_multimer_system = 'multimer' in FLAGS.model_preset
   _check_flag('pdb70_database_path', 'model_preset',
               should_be_set=not run_multimer_system)
@@ -451,7 +453,6 @@ def main(argv):
     model_params = data.get_model_haiku_params(
         model_name=model_name, data_dir=FLAGS.data_dir)
     # Initialize the model runner instances with their respective configurations
-    # and the `monomer` and `multimer` AlphaFold model
     model_runner = model.RunModel(model_config, model_params)
     for i in range(num_predictions_per_model):
       model_runners[f'{model_name}_pred_{i}'] = model_runner
@@ -473,6 +474,8 @@ def main(argv):
   logging.info('Using random seed %d for the data pipeline', random_seed)
 
   # Predict structure for each of the sequences.
+  # The difference between the monomer and multimer systems is the `data_pipeline`
+  # and the `model_runners` that have different configuration and parameters
   for i, fasta_path in enumerate(FLAGS.fasta_paths):
     fasta_name = fasta_names[i]
     predict_structure(

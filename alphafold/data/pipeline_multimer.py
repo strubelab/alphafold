@@ -209,6 +209,8 @@ class DataPipeline:
     with temp_fasta_file(chain_fasta_str) as chain_fasta_path:
       logging.info('Running monomer pipeline on chain %s: %s',
                    chain_id, description)
+      # Returns dictionary with sequence features, msa features, and templates
+      # features for a single sequence
       chain_features = self._monomer_data_pipeline.process(
           input_fasta_path=chain_fasta_path,
           msa_output_dir=chain_msa_output_dir)
@@ -243,7 +245,8 @@ class DataPipeline:
     """Runs alignment tools on the input sequences and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
-    # Lists with sequences and descriptions from the ID line in fasta files
+    # input_seqs is a list with fasta sequences as strings
+    # input_descs is a list with fasta descriptions as strings, in the same order
     input_seqs, input_descs = parsers.parse_fasta(input_fasta_str)
 
     # Returns a dictionary with {chain_id: _FastaChain(sequence, description)}
@@ -256,11 +259,13 @@ class DataPipeline:
                            for chain_id, fasta_chain in chain_id_map.items()}
       json.dump(chain_id_map_dict, f, indent=4, sort_keys=True)
 
-    # Calculate the features for every chain separately, one by one!
+    # Calculate the features for every chain separately, one by one
     all_chain_features = {}
     sequence_features = {}
+    # Only construct pairing features if there are 2 or more unique sequences.
     is_homomer_or_monomer = len(set(input_seqs)) == 1
     for chain_id, fasta_chain in chain_id_map.items():
+      # If features for this sequence are already calculated, copy them
       if fasta_chain.sequence in sequence_features:
         all_chain_features[chain_id] = copy.deepcopy(
             sequence_features[fasta_chain.sequence])

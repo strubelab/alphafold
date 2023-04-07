@@ -151,6 +151,8 @@ class DataPipeline:
     """Runs alignment tools on the input sequence and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
+    # input_seqs is a list with fasta sequences as strings
+    # input_descs is a list with fasta descriptions as strings, in the same order
     input_seqs, input_descs = parsers.parse_fasta(input_fasta_str)
     if len(input_seqs) != 1:
       raise ValueError(
