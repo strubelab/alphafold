@@ -172,7 +172,7 @@ class AlphafoldIbex(IbexRun):
                 f'#SBATCH --array=0-{self.njobs-1}\n'
                 f'{self.mail_string}'
                 '\n'
-                f'module load alphafold/2.3.1/python3\n'
+                f'module load alphafold/2.1.1/python3\n'
                 '\n'
                 f'conda activate {self.conda_env}\n'
                 '\n'
