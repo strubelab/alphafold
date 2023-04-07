@@ -38,6 +38,8 @@ gpu_type = sys.argv[7]
 old_uniclust = sys.argv[8] == 'True'
 max_template_date = sys.argv[9]
 only_features_chain = sys.argv[10]
+if only_features_chain == 'None':
+    only_features_chain = None
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
