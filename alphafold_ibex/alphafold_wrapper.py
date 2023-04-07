@@ -43,6 +43,7 @@ class AlphaFold(Executor):
                  use_precomputed_msas:bool=False,
                  gpu_type:str='v100',
                  old_uniclust:bool=False,
+                 only_features_chain:str=None,
                  **kw):
         """
         Instantiate variables
@@ -99,13 +100,14 @@ class AlphaFold(Executor):
         self.multimer_predictions_per_model = multimer_predictions_per_model
         self.use_precomputed_msas = use_precomputed_msas
         self.old_uniclust = old_uniclust
+        self.only_features_chain = only_features_chain
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
         else:
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
 
-        if len(self.SeqRecs) > 1:
+        if len(self.SeqRecs) > 1 or self.only_features_chain:
             self.model_preset = 'multimer'
 
         self.chain_breaks, self.homooligomers, self.unique_names = (
@@ -171,6 +173,7 @@ class AlphaFold(Executor):
                     'pdb_seqres.txt '
                 f'--num_multimer_predictions_per_model='
                 f'{self.multimer_predictions_per_model} '
+                f'--only_features_chain={self.only_features_chain} '
             ).split()
         
         else:
@@ -233,6 +236,9 @@ class AlphaFold(Executor):
         than `self.tempdir`, which will be removed in the cleanup() method of
         the parent Executor class.
         """
+        
+        if self.only_features_chain:
+            return None
 
         # Read otuputs
         features_files = list(self.out_model.glob('result_model_*'))

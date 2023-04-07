@@ -149,6 +149,11 @@ flags.DEFINE_integer('recycles', 3, 'Number of times to recycle the outputs '
                      'through the network. 3 (default) is the recommended number.',
                      lower_bound=1, upper_bound=12)
 
+# Additional flag to only calculate features
+flags.DEFINE_string('only_features_chain', None, 'Only calculate features for '
+                     'multimeric models and save them to the output directory. '
+                     'The value of this flag should be the letter of the chain ID.')
+
 
 FLAGS = flags.FLAGS
 
@@ -189,7 +194,8 @@ def predict_structure(
     amber_relaxer: relax.AmberRelaxation,
     benchmark: bool,
     random_seed: int,
-    models_to_relax: ModelsToRelax):
+    models_to_relax: ModelsToRelax,
+    only_features_chain: str):
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
   timings = {}
@@ -206,13 +212,18 @@ def predict_structure(
   t_0 = time.time()
   feature_dict = data_pipeline.process(
       input_fasta_path=fasta_path,
-      msa_output_dir=msa_output_dir)
+      msa_output_dir=msa_output_dir,
+      only_features_chain=only_features_chain)
   timings['features'] = time.time() - t_0
 
   # Write out features as a pickled dictionary.
   features_output_path = os.path.join(output_dir, 'features.pkl')
   with open(features_output_path, 'wb') as f:
     pickle.dump(feature_dict, f, protocol=4)
+  
+  # If only features are needed, return here to exit
+  if only_features_chain is not None:
+    return None
 
   unrelaxed_pdbs = {}
   unrelaxed_proteins = {}
@@ -487,7 +498,8 @@ def main(argv):
         amber_relaxer=amber_relaxer,
         benchmark=FLAGS.benchmark,
         random_seed=random_seed,
-        models_to_relax=FLAGS.models_to_relax)
+        models_to_relax=FLAGS.models_to_relax,
+        only_features_chain=FLAGS.only_features_chain)
 
 
 if __name__ == '__main__':

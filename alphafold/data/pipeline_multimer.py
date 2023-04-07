@@ -241,7 +241,8 @@ class DataPipeline:
 
   def process(self,
               input_fasta_path: str,
-              msa_output_dir: str) -> pipeline.FeatureDict:
+              msa_output_dir: str,
+              only_features_chain: str) -> pipeline.FeatureDict:
     """Runs alignment tools on the input sequences and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
@@ -253,11 +254,43 @@ class DataPipeline:
     chain_id_map = _make_chain_id_map(sequences=input_seqs,
                                       descriptions=input_descs)
     chain_id_map_path = os.path.join(msa_output_dir, 'chain_id_map.json')
+    
     # Save the chain ids to a json file as dictionaries
+    # {
+    # "A": {
+    #     "description": "Osjap10g06510.1",
+    #     "sequence": "MWVPPI...YLGS"
+    # },
+    # "B": {
+    #     "description": "Osjap10g06510.1",
+    #     "sequence": "MWVPPI...YLGS"
+    # }
+    # }
     with open(chain_id_map_path, 'w') as f:
       chain_id_map_dict = {chain_id: dataclasses.asdict(fasta_chain)
                            for chain_id, fasta_chain in chain_id_map.items()}
       json.dump(chain_id_map_dict, f, indent=4, sort_keys=True)
+
+    ############################
+    # If only_features_chain is specified, only calculate features for one chain
+    if only_features_chain is not None:
+      is_homomer_or_monomer = False
+      chain_id = only_features_chain
+      fasta_chain = chain_id_map['A']  # This is the only chain
+
+      # Run the monomer pipeline on a single chain
+      chain_features = self._process_single_chain(
+          chain_id=chain_id,
+          sequence=fasta_chain.sequence,
+          description=fasta_chain.description,
+          msa_output_dir=msa_output_dir,
+          is_homomer_or_monomer=is_homomer_or_monomer)
+      
+      chain_features = convert_monomer_features(chain_features,
+                                                chain_id=chain_id)
+      
+      return chain_features
+    ############################ 
 
     # Calculate the features for every chain separately, one by one
     all_chain_features = {}

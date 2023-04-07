@@ -164,6 +164,11 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Maximum template release date to consider. Give value in '
               'YYYY-MM-DD format.'), type=validate_date,
         default=date.today().isoformat())
+    
+    parser.add_argument("--only_features_chain", help="Only calculate the "
+                        "features for the chain in the input fasta file. The "
+                        "value of this parameter is the chain ID to give to "
+                        "this chain.", default=None, type=str)
  
     return parser.parse_args(args)
 
@@ -188,5 +193,6 @@ if __name__ == '__main__':
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     use_precomputed_msas=args.use_precomputed_msas,
                     gpu_type=args.gpu_type, old_uniclust=args.old_uniclust,
-                    max_template_date=args.max_template_date)
+                    max_template_date=args.max_template_date
+                    only_features_chain=args.only_features_chain)
     exe.run()

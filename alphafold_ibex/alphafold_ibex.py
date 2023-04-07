@@ -19,7 +19,8 @@ class AlphafoldIbex(IbexRun):
         gpus:int='auto', gpu_type:str='v100', models_to_relax:str='best',
         mail:str=None, multimer_predictions_per_model:int=5,
         use_precomputed_msas:bool=False, old_uniclust:bool=False,
-        max_template_date:str=date.today().isoformat(), **kw):
+        max_template_date:str=date.today().isoformat(),
+        only_features_chain:str=None, **kw):
         """
         Defines the variables for the ibex job array to run Program.
 
@@ -62,6 +63,7 @@ class AlphafoldIbex(IbexRun):
         self.gpu_type = gpu_type
         self.old_uniclust = old_uniclust
         self.max_template_date = max_template_date
+        self.only_features_chain = only_features_chain
 
         if self.gpu_type == 'a100':
             self.reservation_string = '#SBATCH --reservation=A100\n'
@@ -153,38 +155,63 @@ class AlphafoldIbex(IbexRun):
             f'{self.models_to_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
-            f'{self.max_template_date}\n'
+            f'{self.max_template_date} {self.only_features_chain}\n'
         )
-
-        self.script = (
-            '#!/bin/bash -l\n'
-            '#SBATCH -N 1\n'
-            f'#SBATCH --partition=batch\n'
-            f'#SBATCH --job-name={self.jobname}\n'
-            f'#SBATCH --output={self.out_ibex}/%x.%j.out\n'
-            f'#SBATCH --error={self.out_ibex}/%x.%j.out\n'
-            f'#SBATCH --time={self.time_per_job}\n'
-            f'#SBATCH --mem={self.mem}G\n'
-            f'#SBATCH --gres=gpu:{self.gpus}\n'
-            f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
-            f'#SBATCH --constraint=[{self.gpu_type}]\n'
-            f'#SBATCH --array=0-{self.njobs-1}\n'
-            f'{self.reservation_string}'
-            f'{self.mail_string}'
-            '\n'
-            f'module load alphafold/2.3.1/python3\n'
-            'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
-            'export TF_FORCE_UNIFIED_MEMORY=1\n'
-            'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'
-            'export XLA_PYTHON_CLIENT_ALLOCATOR=platform\n'
-            '\n'
-            f'conda activate {self.conda_env}\n'
-            '\n'
-            f'seq_file="{self.sequences_dir.resolve()}/'
-            'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
-            f'echo "{self.python_command}"\n'
-            f'time {self.python_command}\n'
-        )
+        
+        if self.only_features_chain:
+            # Write a script for CPU only to calculate the features
+            self.script = (
+                '#!/bin/bash -l\n'
+                '#SBATCH -N 1\n'
+                f'#SBATCH --partition=batch\n'
+                f'#SBATCH --job-name={self.jobname}\n'
+                f'#SBATCH --output={self.out_ibex}/%x.%j.out\n'
+                f'#SBATCH --time={self.time_per_job}\n'
+                f'#SBATCH --mem={self.mem}G\n'
+                f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
+                f'#SBATCH --array=0-{self.njobs-1}\n'
+                f'{self.mail_string}'
+                '\n'
+                f'module load alphafold/2.3.1/python3\n'
+                '\n'
+                f'conda activate {self.conda_env}\n'
+                '\n'
+                f'seq_file="{self.sequences_dir.resolve()}/'
+                'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
+                f'echo "{self.python_command}"\n'
+                f'time {self.python_command}\n'
+            )
+            
+        else:
+            # Regular script for GPU to make models
+            self.script = (
+                '#!/bin/bash -l\n'
+                '#SBATCH -N 1\n'
+                f'#SBATCH --partition=batch\n'
+                f'#SBATCH --job-name={self.jobname}\n'
+                f'#SBATCH --output={self.out_ibex}/%x.%j.out\n'
+                f'#SBATCH --time={self.time_per_job}\n'
+                f'#SBATCH --mem={self.mem}G\n'
+                f'#SBATCH --gres=gpu:{self.gpus}\n'
+                f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
+                f'#SBATCH --constraint=[{self.gpu_type}]\n'
+                f'#SBATCH --array=0-{self.njobs-1}\n'
+                f'{self.reservation_string}'
+                f'{self.mail_string}'
+                '\n'
+                f'module load alphafold/2.3.1/python3\n'
+                'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
+                'export TF_FORCE_UNIFIED_MEMORY=1\n'
+                'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'
+                'export XLA_PYTHON_CLIENT_ALLOCATOR=platform\n'
+                '\n'
+                f'conda activate {self.conda_env}\n'
+                '\n'
+                f'seq_file="{self.sequences_dir.resolve()}/'
+                'sequences${SLURM_ARRAY_TASK_ID}.pkl"\n'
+                f'echo "{self.python_command}"\n'
+                f'time {self.python_command}\n'
+            )
 
         with open(self.script_file, 'w') as f:
             f.write(self.script)
