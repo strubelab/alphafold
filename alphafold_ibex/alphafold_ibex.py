@@ -104,22 +104,47 @@ class AlphafoldIbex(IbexRun):
         total_lengths = [sum([len(s) for s in seqs]) for seqs in self.sequences]
         med_len = np.median(total_lengths)
         
-        if med_len<200:
-            self.gpus = 1
-            self.mem = 64
-            self.time_per_command = 120
-        elif med_len<500:
-            self.gpus = 1
-            self.mem = 64
-            self.time_per_command = 300
-        elif med_len<1000:
-            self.gpus = 1
-            self.mem = 128
-            self.time_per_command = 600
+        self.gpus = 1
+
+        # Set different times for features-only or models-only modes
+        if self.only_features_chain:
+            if med_len<500:
+                self.mem = 32
+                self.time_per_command = 90
+            elif med_len<1000:
+                self.mem = 64
+                self.time_per_command = 300
+            else:
+                self.mem = 64
+                self.time_per_command = 600
+        
+        elif self.features_dir:
+            if med_len<500:
+                self.mem = 64
+                self.time_per_command = 60
+            elif med_len<1000:
+                self.mem = 64
+                self.time_per_command = 120
+            elif med_len<2000:
+                self.mem = 128
+                self.time_per_command = 240
+            else:
+                self.mem = 128
+                self.time_per_command = 600
+        
         else:
-            self.gpus = 1
-            self.mem = 128
-            self.time_per_command = 1440
+            if med_len<200:
+                self.mem = 64
+                self.time_per_command = 120
+            elif med_len<500:
+                self.mem = 64
+                self.time_per_command = 300
+            elif med_len<1000:
+                self.mem = 128
+                self.time_per_command = 600
+            else:
+                self.mem = 128
+                self.time_per_command = 1440
 
 
     def write_sequences(self):
