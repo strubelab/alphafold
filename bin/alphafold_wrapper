@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 import sys
+from typing import Union
 
 def validate_file(input:str) -> Path:
         """
@@ -86,6 +87,23 @@ def parsing(args: list=None) -> argparse.Namespace:
         elif int(dsplit[1]) > 12:
             raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
         
+        return d
+    
+    def validate_features_dir(d: Union[str, None]) -> Union[Path, None]:
+        """
+        Check if the features directory exists, otherwise create it. If d is
+        None, return None.
+        
+        Args:
+            d (str): features directory
+        """
+        if d is None:
+            return d
+        
+        d = Path(d)
+        if not d.exists():
+            d.mkdir()
+            
         return d
 
     parser = argparse.ArgumentParser(description=('Takes one or more FASTA '
@@ -169,6 +187,13 @@ def parsing(args: list=None) -> argparse.Namespace:
                         "features for the chain in the input fasta file. The "
                         "value of this parameter is the chain ID to give to "
                         "this chain.", default=None, type=str)
+
+    parser.add_argument("--features_dir", help="Directory with the "
+                        "pre-calculated features to build multimeric models. "
+                        "Inside of this directory there should be "
+                        "subdirectories named after the names of each sequence, "
+                        "with the feature files inside.",
+                        type=validate_features_dir, default=None)
  
     return parser.parse_args(args)
 
@@ -194,5 +219,7 @@ if __name__ == '__main__':
                     use_precomputed_msas=args.use_precomputed_msas,
                     gpu_type=args.gpu_type, old_uniclust=args.old_uniclust,
                     max_template_date=args.max_template_date,
-                    only_features_chain=args.only_features_chain)
+                    only_features_chain=args.only_features_chain,
+                    features_dir=args.features_dir)
+    
     exe.run()

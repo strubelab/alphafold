@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 from datetime import date
 from executor.ibex import IbexRun
+from typing import Union
 
 
 class AlphafoldIbex(IbexRun):
@@ -20,7 +21,7 @@ class AlphafoldIbex(IbexRun):
         mail:str=None, multimer_predictions_per_model:int=5,
         use_precomputed_msas:bool=False, old_uniclust:bool=False,
         max_template_date:str=date.today().isoformat(),
-        only_features_chain:str=None, **kw):
+        only_features_chain:str=None, features_dir:Union[Path,None]=None, **kw):
         """
         Defines the variables for the ibex job array to run Program.
 
@@ -64,6 +65,7 @@ class AlphafoldIbex(IbexRun):
         self.old_uniclust = old_uniclust
         self.max_template_date = max_template_date
         self.only_features_chain = only_features_chain
+        self.features_dir = features_dir
 
         if self.gpu_type == 'a100':
             self.reservation_string = '#SBATCH --reservation=A100\n'
@@ -155,7 +157,8 @@ class AlphafoldIbex(IbexRun):
             f'{self.models_to_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
-            f'{self.max_template_date} {self.only_features_chain}\n'
+            f'{self.max_template_date} {self.only_features_chain} '
+            f'{self.features_dir} \n'
         )
         
         if self.only_features_chain:

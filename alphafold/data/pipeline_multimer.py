@@ -33,6 +33,9 @@ from alphafold.data import pipeline
 from alphafold.data.tools import jackhmmer
 import numpy as np
 
+from pathlib import Path
+import pickle
+
 # Internal import (7716).
 
 
@@ -242,7 +245,8 @@ class DataPipeline:
   def process(self,
               input_fasta_path: str,
               msa_output_dir: str,
-              only_features_chain: str) -> pipeline.FeatureDict:
+              only_features_chain: str,
+              features_dir: str) -> pipeline.FeatureDict:
     """Runs alignment tools on the input sequences and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
@@ -271,7 +275,7 @@ class DataPipeline:
                            for chain_id, fasta_chain in chain_id_map.items()}
       json.dump(chain_id_map_dict, f, indent=4, sort_keys=True)
 
-    ############################
+    ############################ ADDITIONS FOR ONLY CALCULATING FEATURES
     # If only_features_chain is specified, only calculate features for one chain
     if only_features_chain is not None:
       is_homomer_or_monomer = False
@@ -303,16 +307,28 @@ class DataPipeline:
         all_chain_features[chain_id] = copy.deepcopy(
             sequence_features[fasta_chain.sequence])
         continue
-      # Run the monomer pipeline on a single chain
-      chain_features = self._process_single_chain(
-          chain_id=chain_id,
-          sequence=fasta_chain.sequence,
-          description=fasta_chain.description,
-          msa_output_dir=msa_output_dir,
-          is_homomer_or_monomer=is_homomer_or_monomer)
+      
+      ############################ ADDITIONS FOR CALCULATING MODEL FROM FEATURES
+      # If features_dir is specified, read the features from the directory
+      if features_dir is not None:
+        features_path = (Path(features_dir)/
+                         fasta_chain.description/
+                         'features.pkl')
+        with open(features_path, 'rb') as f:
+          chain_features = pickle.load(f)
+      else:
+        # Run the monomer pipeline on a single chain
+        chain_features = self._process_single_chain(
+            chain_id=chain_id,
+            sequence=fasta_chain.sequence,
+            description=fasta_chain.description,
+            msa_output_dir=msa_output_dir,
+            is_homomer_or_monomer=is_homomer_or_monomer)
 
-      chain_features = convert_monomer_features(chain_features,
-                                                chain_id=chain_id)
+        chain_features = convert_monomer_features(chain_features,
+                                                  chain_id=chain_id)
+      ############################
+      
       all_chain_features[chain_id] = chain_features
       sequence_features[fasta_chain.sequence] = chain_features
 

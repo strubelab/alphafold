@@ -37,9 +37,14 @@ use_precomputed_msas = sys.argv[6] == 'True'
 gpu_type = sys.argv[7]
 old_uniclust = sys.argv[8] == 'True'
 max_template_date = sys.argv[9]
+
 only_features_chain = sys.argv[10]
 if only_features_chain == 'None':
     only_features_chain = None
+
+features_dir = sys.argv[11]
+if features_dir == 'None':
+    features_dir = None
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
@@ -53,7 +58,8 @@ for seqs in sequences:
                 multimer_predictions_per_model=multimer_predictions_per_model,
                 use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type,
                 old_uniclust=old_uniclust, max_template_date=max_template_date,
-                only_features_chain=only_features_chain)
+                only_features_chain=only_features_chain,
+                features_dir=features_dir)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

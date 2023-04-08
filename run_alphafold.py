@@ -154,6 +154,10 @@ flags.DEFINE_string('only_features_chain', None, 'Only calculate features for '
                      'multimeric models and save them to the output directory. '
                      'The value of this flag should be the letter of the chain ID.')
 
+# Additional flag to calculate multimeric model from features
+flags.DEFINE_string('features_dir', None, 'Directory with the '
+                    'pre-calculated features for the multimeric model.')
+
 
 FLAGS = flags.FLAGS
 
@@ -195,7 +199,8 @@ def predict_structure(
     benchmark: bool,
     random_seed: int,
     models_to_relax: ModelsToRelax,
-    only_features_chain: str):
+    only_features_chain: str,
+    features_dir: str):
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
   timings = {}
@@ -213,7 +218,8 @@ def predict_structure(
   feature_dict = data_pipeline.process(
       input_fasta_path=fasta_path,
       msa_output_dir=msa_output_dir,
-      only_features_chain=only_features_chain)
+      only_features_chain=only_features_chain,
+      features_dir=features_dir)
   timings['features'] = time.time() - t_0
 
   # Write out features as a pickled dictionary.
@@ -484,6 +490,17 @@ def main(argv):
     random_seed = random.randrange(sys.maxsize // len(model_runners))
   logging.info('Using random seed %d for the data pipeline', random_seed)
 
+  # Chek if the features flags are set, if not, set them as None
+  if (FLAGS.only_features_chain is None) or (FLAGS.only_features_chain == 'None'):
+    only_features_chain = None
+  else:
+    only_features_chain = FLAGS.only_features_chain
+    
+  if (FLAGS.features_dir is None) or (FLAGS.features_dir == 'None'):
+    features_dir = None
+  else:
+    features_dir = FLAGS.features_dir
+  
   # Predict structure for each of the sequences.
   # The difference between the monomer and multimer systems is the `data_pipeline`
   # and the `model_runners` that have different configuration and parameters
@@ -499,7 +516,8 @@ def main(argv):
         benchmark=FLAGS.benchmark,
         random_seed=random_seed,
         models_to_relax=FLAGS.models_to_relax,
-        only_features_chain=FLAGS.only_features_chain)
+        only_features_chain=only_features_chain,
+        features_dir=features_dir)
 
 
 if __name__ == '__main__':

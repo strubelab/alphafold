@@ -12,6 +12,7 @@ from datetime import date
 import configparser
 import json
 from matplotlib import pyplot as plt
+from typing import Union
 
 from executor.executor import Executor
 
@@ -44,6 +45,7 @@ class AlphaFold(Executor):
                  gpu_type:str='v100',
                  old_uniclust:bool=False,
                  only_features_chain:str=None,
+                 features_dir:Union[Path,None]=None,
                  **kw):
         """
         Instantiate variables
@@ -74,6 +76,8 @@ class AlphaFold(Executor):
             tempdir (Path, optional):
                 Temporary directory to write the fasta sequence. Defaults to
                 None.
+            features_dir (Path, optional):
+                Directory where to find the features, if they are precomputed.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -101,6 +105,7 @@ class AlphaFold(Executor):
         self.use_precomputed_msas = use_precomputed_msas
         self.old_uniclust = old_uniclust
         self.only_features_chain = only_features_chain
+        self.features_dir = features_dir
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
@@ -174,6 +179,7 @@ class AlphaFold(Executor):
                 f'--num_multimer_predictions_per_model='
                 f'{self.multimer_predictions_per_model} '
                 f'--only_features_chain={self.only_features_chain} '
+                f'--features_dir={self.features_dir} '
             ).split()
         
         else:
