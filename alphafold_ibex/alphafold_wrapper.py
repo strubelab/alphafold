@@ -112,16 +112,21 @@ class AlphaFold(Executor):
         else:
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2021_03'
 
-        if len(self.SeqRecs) > 1 or self.only_features_chain:
+        if len(self.SeqRecs) > 1 or self.only_features_chain or self.features_dir:
             self.model_preset = 'multimer'
 
         self.chain_breaks, self.homooligomers, self.unique_names = (
                                             define_homooligomers(self.SeqRecs))
 
+        # Set the name of the target protein model, which will be used as the
+        # name of the output directory for the results from AF
         if target_name is None:
-            self.target_name = '_'.join(
-                                [f'{name}-{h}' for name, h in \
-                                zip(self.unique_names, self.homooligomers)])
+            if model_preset == 'monomer_ptm' or self.only_features_chain:
+                self.target_name = self.unique_names[0]
+            elif model_preset == 'multimer':
+                self.target_name = '_'.join(
+                                    [f'{name}-{h}' for name, h in \
+                                    zip(self.unique_names, self.homooligomers)])
 
         if out_dir is None:
             self.out_dir = Path(f'{self.target_name}')
