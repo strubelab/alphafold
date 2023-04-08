@@ -184,9 +184,13 @@ def parsing(args: list=None) -> argparse.Namespace:
         default=date.today().isoformat())
     
     parser.add_argument("--only_features_chain", help="Only calculate the "
-                        "features for the chain in the input fasta file. The "
+                        "features for the sequence in the input fasta file. The "
                         "value of this parameter is the chain ID to give to "
-                        "this chain.", default=None, type=str)
+                        "this chain (e.g. A, B, C, etc.). The choice of the "
+                        "chain ID has to agree with the order of the sequences "
+                        "in the fasta file when making the model with the "
+                        "--features_dir argument.",
+                        default=None, type=str)
 
     parser.add_argument("--features_dir", help="Directory with the "
                         "pre-calculated features to build multimeric models. "

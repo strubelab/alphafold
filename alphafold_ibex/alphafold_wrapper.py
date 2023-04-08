@@ -44,8 +44,8 @@ class AlphaFold(Executor):
                  use_precomputed_msas:bool=False,
                  gpu_type:str='v100',
                  old_uniclust:bool=False,
-                 only_features_chain:str=None,
-                 features_dir:Union[Path,None]=None,
+                 only_features_chain: Union[str, None] = None,
+                 features_dir: Union[Path, None] = None,
                  **kw):
         """
         Instantiate variables
@@ -121,12 +121,14 @@ class AlphaFold(Executor):
         # Set the name of the target protein model, which will be used as the
         # name of the output directory for the results from AF
         if target_name is None:
-            if model_preset == 'monomer_ptm' or self.only_features_chain:
+            if self.model_preset == 'monomer_ptm' or self.only_features_chain:
                 self.target_name = self.unique_names[0]
-            elif model_preset == 'multimer':
+            elif self.model_preset == 'multimer':
                 self.target_name = '_'.join(
                                     [f'{name}-{h}' for name, h in \
                                     zip(self.unique_names, self.homooligomers)])
+            else:
+                raise ValueError(f'model_preset=={self.model_preset} not supported')
 
         if out_dir is None:
             self.out_dir = Path(f'{self.target_name}')

@@ -21,7 +21,8 @@ class AlphafoldIbex(IbexRun):
         mail:str=None, multimer_predictions_per_model:int=5,
         use_precomputed_msas:bool=False, old_uniclust:bool=False,
         max_template_date:str=date.today().isoformat(),
-        only_features_chain:str=None, features_dir:Union[Path,None]=None, **kw):
+        only_features_chain: Union[str, None]=None,
+        features_dir: Union[Path, None]=None, **kw):
         """
         Defines the variables for the ibex job array to run Program.
 
