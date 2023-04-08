@@ -13,6 +13,7 @@ import configparser
 import json
 from matplotlib import pyplot as plt
 from typing import Union
+import shutil
 
 from executor.executor import Executor
 
@@ -45,6 +46,7 @@ class AlphaFold(Executor):
                  gpu_type:str='v100',
                  old_uniclust:bool=False,
                  only_features_chain: Union[str, None] = None,
+                 keep_msas: bool = False,
                  features_dir: Union[Path, None] = None,
                  **kw):
         """
@@ -76,6 +78,12 @@ class AlphaFold(Executor):
             tempdir (Path, optional):
                 Temporary directory to write the fasta sequence. Defaults to
                 None.
+            only_features_chain (str, optional):
+                If provided, only the features for this sequence will be
+                calculated, with the provided chain ID. Defaults to None.
+            keep_msas (bool, optional):
+                If True, the MSA files will be kept after calculating the 
+                features. Only used in features-only mode. Defaults to False.
             features_dir (Path, optional):
                 Directory where to find the features, if they are precomputed.
         """
@@ -106,6 +114,7 @@ class AlphaFold(Executor):
         self.old_uniclust = old_uniclust
         self.only_features_chain = only_features_chain
         self.features_dir = features_dir
+        self.keep_msas = keep_msas
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
@@ -250,7 +259,11 @@ class AlphaFold(Executor):
         the parent Executor class.
         """
         
+        # If only features are generated, remove MSAs and finish
         if self.only_features_chain:
+            if not self.keep_msas:
+                shutil.rmtree(self.out_model/'msas')
+            
             return None
 
         # Read otuputs
