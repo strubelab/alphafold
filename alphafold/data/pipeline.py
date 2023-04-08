@@ -148,7 +148,8 @@ class DataPipeline:
     self.use_precomputed_msas = use_precomputed_msas
 
   def process(self, input_fasta_path: str, msa_output_dir: str,
-              only_features_chain: str = None) -> FeatureDict:
+              only_features_chain: str = None,
+              features_dir: str = None) -> FeatureDict:
     """Runs alignment tools on the input sequence and creates features."""
     with open(input_fasta_path) as f:
       input_fasta_str = f.read()
