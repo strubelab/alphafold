@@ -48,6 +48,7 @@ class AlphaFold(Executor):
                  only_features_chain: Union[str, None] = None,
                  keep_msas: bool = False,
                  features_dir: Union[Path, None] = None,
+                 only_pae_interaction: bool = False,
                  **kw):
         """
         Instantiate variables
@@ -86,6 +87,10 @@ class AlphaFold(Executor):
                 features. Only used in features-only mode. Defaults to False.
             features_dir (Path, optional):
                 Directory where to find the features, if they are precomputed.
+            only_pae_interaction (bool, optional):
+                If True, the mean of the PAE quadrant for the interaction of the
+                best model will be calculated and saved to a file, and all the
+                pickled results will be erased. Defaults to False.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -115,6 +120,7 @@ class AlphaFold(Executor):
         self.only_features_chain = only_features_chain
         self.features_dir = features_dir
         self.keep_msas = keep_msas
+        self.only_pae_interaction = only_pae_interaction
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
@@ -310,4 +316,17 @@ class AlphaFold(Executor):
             except:
                 logging.error(f"Could not generate protein plot for {name}...")
                 raise
-
+        
+        if self.only_pae_interaction:
+            # Calculate the mean of the PAE quadrant for the interaction for the
+            # best model and save it to a file
+            pae = self.outs[self.model_rank[0]]['pae']
+            q2 = pae[0:len(self.SeqRecs[0]), len(self.SeqRecs[0]):]
+            
+            with open(self.out_model/'mean_pae_best.txt', 'w') as f:
+                f.write(f"{q2.mean():.2f}")
+            
+            # Erase all .pkl files
+            pickle_files = list(self.out_model.glob('*.pkl'))
+            for pf in pickle_files:
+                pf.unlink()

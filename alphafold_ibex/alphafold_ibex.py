@@ -22,7 +22,9 @@ class AlphafoldIbex(IbexRun):
         use_precomputed_msas:bool=False, old_uniclust:bool=False,
         max_template_date:str=date.today().isoformat(),
         only_features_chain: Union[str, None]=None,
-        features_dir: Union[Path, None]=None, **kw):
+        features_dir: Union[Path, None]=None,
+        only_pae_interaction: bool = False,
+        **kw):
         """
         Defines the variables for the ibex job array to run Program.
 
@@ -42,6 +44,10 @@ class AlphafoldIbex(IbexRun):
                 Specify the amount of RAM to request for the job
             gpus (int, optional):
                 Specify the number of gpus that you want for the job
+            only_pae_interaction (bool, optional):
+                If True, only the interaction between the two chains will be
+                evaluated with the mean of the PAE for the second quadrant. All
+                pickled results will be erased. Defaults to False.
         """
         self.sequences = sequences
         
@@ -67,6 +73,7 @@ class AlphafoldIbex(IbexRun):
         self.max_template_date = max_template_date
         self.only_features_chain = only_features_chain
         self.features_dir = features_dir
+        self.only_pae_interaction = only_pae_interaction
 
         if self.gpu_type == 'a100':
             self.reservation_string = '#SBATCH --reservation=A100\n'
@@ -184,7 +191,7 @@ class AlphafoldIbex(IbexRun):
             f'{self.multimer_predictions_per_model} '
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
             f'{self.max_template_date} {self.only_features_chain} '
-            f'{self.features_dir} \n'
+            f'{self.features_dir} {self.only_pae_interaction} \n'
         )
         
         if self.only_features_chain:

@@ -46,6 +46,8 @@ features_dir = sys.argv[11]
 if features_dir == 'None':
     features_dir = None
 
+only_pae_interaction = sys.argv[12] == 'True'
+
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
 
@@ -59,7 +61,8 @@ for seqs in sequences:
                 use_precomputed_msas=use_precomputed_msas, gpu_type=gpu_type,
                 old_uniclust=old_uniclust, max_template_date=max_template_date,
                 only_features_chain=only_features_chain,
-                features_dir=features_dir)
+                features_dir=features_dir,
+                only_pae_interaction=only_pae_interaction)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     
