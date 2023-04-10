@@ -14,6 +14,8 @@ import json
 from matplotlib import pyplot as plt
 from typing import Union
 import shutil
+import pandas as pd
+import numpy as np
 
 from executor.executor import Executor
 
@@ -255,6 +257,47 @@ class AlphaFold(Executor):
             raise self.error(self.failed_message)
         else:
             raise self.error
+        
+    def process_pae(self, pae:np.ndarray) -> None:
+        """
+        Calculate the minimum average PAE for the quadrants with interactions,
+        and the minimum rolling window average for the rows and columns of both
+        quadrants.
+        
+        Write the results to two files
+        - mean_pae_best.txt: the minimum average PAE for the quadrants
+        - min_rolling_mean_pae.txt: the minimum rolling window average
+
+        Args:
+            pae (np.ndarray): PAE matrix of the best model
+        """
+        # Calculate the mean of the PAE quadrants for the interaction for the
+        # best model and save it to a file
+        len_seq1 = len(self.SeqRecs[0])
+        q2 = pae[0:len_seq1, len_seq1:]
+        q3 = pae[len_seq1:, 0:len_seq1]
+        
+        # Report only the minimum of the two quadrants' means
+        min_mean = min(q2.mean(), q3.mean())
+        
+        with open(self.out_model/'mean_pae_best.txt', 'w') as f:
+            f.write(f"{min_mean:.2f}\n")
+        
+        # Calculate the minimum rolling mean of the PAE quadrants for both
+        # rows and columns
+        q2_df = pd.DataFrame(q2)
+        min_q2_columns = q2_df.rolling(window=7, axis=0).mean().min().min()
+        min_q2_rows = q2_df.rolling(window=7, axis=1).mean().min().min()
+        
+        q3_df = pd.DataFrame(q3)
+        min_q3_columns = q3_df.rolling(window=7, axis=0).mean().min().min()
+        min_q3_rows = q3_df.rolling(window=7, axis=1).mean().min().min()
+        
+        min_rolling = min(min_q2_columns, min_q2_rows,
+                            min_q3_columns, min_q3_rows)
+        
+        with open(self.out_model/'min_rolling_pae.txt', 'w') as f:
+            f.write(f"{min_rolling:.2f}\n")
     
             
     def finish(self):
@@ -318,15 +361,13 @@ class AlphaFold(Executor):
                 raise
         
         if self.only_pae_interaction:
-            # Calculate the mean of the PAE quadrant for the interaction for the
-            # best model and save it to a file
+            # Calculate the minimum average PAE for the quadrants with
+            # interactions, and the minimum rolling window average
             pae = self.outs[self.model_rank[0]]['pae']
-            q2 = pae[0:len(self.SeqRecs[0]), len(self.SeqRecs[0]):]
+            self.process_pae(pae)
             
-            with open(self.out_model/'mean_pae_best.txt', 'w') as f:
-                f.write(f"{q2.mean():.2f}")
-            
-            # Erase all .pkl files
+            # Erase all .pkl files except for the best model
             pickle_files = list(self.out_model.glob('*.pkl'))
+            pickle_files.remove(self.out_model/f'result_{self.model_rank[0]}.pkl')
             for pf in pickle_files:
                 pf.unlink()
