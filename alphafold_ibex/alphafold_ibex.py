@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 from datetime import date
 from executor.ibex import IbexRun
-from typing import Union
+from typing import Union, List
 
 
 class AlphafoldIbex(IbexRun):
@@ -24,6 +24,7 @@ class AlphafoldIbex(IbexRun):
         only_features_chain: Union[str, None]=None,
         features_dir: Union[Path, None]=None,
         only_pae_interaction: bool = False,
+        model_names: List[str] = None,
         **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -48,6 +49,9 @@ class AlphafoldIbex(IbexRun):
                 If True, only the interaction between the two chains will be
                 evaluated with the mean of the PAE for the second quadrant. All
                 pickled results will be erased. Defaults to False.
+            model_names (list, optional):
+                List of names for the models to be run. If None, all five models
+                will be run. Defaults to None.
         """
         self.sequences = sequences
         
@@ -74,6 +78,12 @@ class AlphafoldIbex(IbexRun):
         self.only_features_chain = only_features_chain
         self.features_dir = features_dir
         self.only_pae_interaction = only_pae_interaction
+
+        if model_names is None:
+            self.model_names_str = 'None'
+        else:
+            self.model_names_str = ','.join(model_names)
+
 
         if self.gpu_type == 'a100':
             self.reservation_string = '#SBATCH --reservation=A100\n'
@@ -191,7 +201,8 @@ class AlphafoldIbex(IbexRun):
             f'{self.multimer_predictions_per_model} '
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
             f'{self.max_template_date} {self.only_features_chain} '
-            f'{self.features_dir} {self.only_pae_interaction} \n'
+            f'{self.features_dir} {self.only_pae_interaction} '
+            f'{self.model_names_str}'
         )
         
         if self.only_features_chain:

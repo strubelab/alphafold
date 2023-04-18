@@ -16,6 +16,7 @@ from typing import Union
 import shutil
 import pandas as pd
 import numpy as np
+from typing import List
 
 from executor.executor import Executor
 
@@ -51,6 +52,7 @@ class AlphaFold(Executor):
                  keep_msas: bool = False,
                  features_dir: Union[Path, None] = None,
                  only_pae_interaction: bool = False,
+                 model_names: List[str] = None,
                  **kw):
         """
         Instantiate variables
@@ -93,6 +95,8 @@ class AlphaFold(Executor):
                 If True, the mean of the PAE quadrant for the interaction of the
                 best model will be calculated and saved to a file, and all the
                 pickled results will be erased. Defaults to False.
+            model_names (list, optional):
+                List of models to run. If None, all models will be run.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -123,6 +127,11 @@ class AlphaFold(Executor):
         self.features_dir = features_dir
         self.keep_msas = keep_msas
         self.only_pae_interaction = only_pae_interaction
+        
+        if model_names is None:
+            self.model_names_str = ''
+        else:
+            self.model_names_str = f"--model_names={','.join(model_names)} "
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
@@ -192,6 +201,7 @@ class AlphaFold(Executor):
             f'--models_to_relax={self.models_to_relax} '
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
             f'--recycles={self.recycles} '
+            f'{self.model_names_str}'
         ).split()
 
         if 'multimer' in self.model_preset:

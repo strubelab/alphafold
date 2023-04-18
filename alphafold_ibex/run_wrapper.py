@@ -48,6 +48,13 @@ if features_dir == 'None':
 
 only_pae_interaction = sys.argv[12] == 'True'
 
+# If model_names is not None, split the string into a list of strings
+model_names = sys.argv[13]
+if model_names != 'None':
+    model_names = model_names.split(',')
+else:
+    model_names = None
+
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
 
@@ -62,7 +69,8 @@ for seqs in sequences:
                 old_uniclust=old_uniclust, max_template_date=max_template_date,
                 only_features_chain=only_features_chain,
                 features_dir=features_dir,
-                only_pae_interaction=only_pae_interaction)
+                only_pae_interaction=only_pae_interaction,
+                model_names=model_names)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

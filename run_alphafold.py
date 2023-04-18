@@ -158,6 +158,10 @@ flags.DEFINE_string('only_features_chain', None, 'Only calculate features for '
 flags.DEFINE_string('features_dir', None, 'Directory with the '
                     'pre-calculated features for the multimeric model.')
 
+# Additional flag to set a custom list of models to run
+flags.DEFINE_list('model_names', None, 'List of model names to run. If None, '
+                  'run all models for the given preset.')
+
 
 FLAGS = flags.FLAGS
 
@@ -447,7 +451,12 @@ def main(argv):
   # Load names of the models to be run according to the chosen preset
   # Load model configurations and parameters
   model_runners = {}
-  model_names = config.MODEL_PRESETS[FLAGS.model_preset]
+  ## Set custom model names
+  if FLAGS.model_names is None:
+    model_names = config.MODEL_PRESETS[FLAGS.model_preset]
+  else:
+    model_names = FLAGS.model_names
+    
   for model_name in model_names:
     model_config = config.model_config(model_name)
     if run_multimer_system:
