@@ -25,6 +25,7 @@ class AlphafoldIbex(IbexRun):
         features_dir: Union[Path, None]=None,
         only_pae_interaction: bool = False,
         model_names: List[str] = None,
+        make_plots: bool = True,
         **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -52,6 +53,8 @@ class AlphafoldIbex(IbexRun):
             model_names (list, optional):
                 List of names for the models to be run. If None, all five models
                 will be run. Defaults to None.
+            make_plots (bool, optional):
+                If True, the plots will be generated. Defaults to True.
         """
         self.sequences = sequences
         
@@ -78,6 +81,7 @@ class AlphafoldIbex(IbexRun):
         self.only_features_chain = only_features_chain
         self.features_dir = features_dir
         self.only_pae_interaction = only_pae_interaction
+        self.make_plots = make_plots
 
         if model_names is None:
             self.model_names_str = 'None'
@@ -202,7 +206,7 @@ class AlphafoldIbex(IbexRun):
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
             f'{self.max_template_date} {self.only_features_chain} '
             f'{self.features_dir} {self.only_pae_interaction} '
-            f'{self.model_names_str}'
+            f'{self.model_names_str} {self.make_plots}'
         )
         
         if self.only_features_chain:

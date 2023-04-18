@@ -16,7 +16,7 @@ from typing import Union
 import shutil
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Tuple
 
 from executor.executor import Executor
 
@@ -53,6 +53,7 @@ class AlphaFold(Executor):
                  features_dir: Union[Path, None] = None,
                  only_pae_interaction: bool = False,
                  model_names: List[str] = None,
+                 make_plots: bool = True,
                  **kw):
         """
         Instantiate variables
@@ -94,9 +95,12 @@ class AlphaFold(Executor):
             only_pae_interaction (bool, optional):
                 If True, the mean of the PAE quadrant for the interaction of the
                 best model will be calculated and saved to a file, and all the
-                pickled results will be erased. Defaults to False.
+                pickled results will be erased, except for the best model.
+                Defaults to False.
             model_names (list, optional):
                 List of models to run. If None, all models will be run.
+            make_plots (bool, optional):
+                If True, the plots will be generated. Defaults to True.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -127,6 +131,7 @@ class AlphaFold(Executor):
         self.features_dir = features_dir
         self.keep_msas = keep_msas
         self.only_pae_interaction = only_pae_interaction
+        self.make_plots = make_plots
         
         if model_names is None:
             self.model_names_str = ''
@@ -268,7 +273,7 @@ class AlphaFold(Executor):
         else:
             raise self.error
         
-    def process_pae(self, pae:np.ndarray) -> None:
+    def process_pae(self, pae:np.ndarray) -> Tuple[float, float]:
         """
         Calculate the minimum average PAE for the quadrants with interactions,
         and the minimum rolling window average for the rows and columns of both
@@ -290,9 +295,6 @@ class AlphaFold(Executor):
         # Report only the minimum of the two quadrants' means
         min_mean = min(q2.mean(), q3.mean())
         
-        with open(self.out_model/'mean_pae_best.txt', 'w') as f:
-            f.write(f"{min_mean:.2f}\n")
-        
         # Calculate the minimum rolling mean of the PAE quadrants for both
         # rows and columns
         q2_df = pd.DataFrame(q2)
@@ -306,8 +308,7 @@ class AlphaFold(Executor):
         min_rolling = min(min_q2_columns, min_q2_rows,
                             min_q3_columns, min_q3_rows)
         
-        with open(self.out_model/'min_rolling_pae.txt', 'w') as f:
-            f.write(f"{min_rolling:.2f}\n")
+        return min_mean, min_rolling
     
             
     def finish(self):
@@ -325,7 +326,7 @@ class AlphaFold(Executor):
             
             return None
 
-        # Read otuputs
+        # Read outputs
         features_files = list(self.out_model.glob('result_model_*'))
 
         self.prediction_results, self.outs = (
@@ -335,46 +336,55 @@ class AlphaFold(Executor):
         with open(self.out_model/'ranking_debug.json', 'r') as f:
             self.model_rank = json.load(f)['order']
 
-        # Plot properties
-        self.plots_dir = self.out_model / 'plots'
-        self.plots_dir.mkdir(exist_ok=True)
-
-        plot_paes([self.outs[k]["pae"] for k in self.model_rank],
-                  chain_breaks=self.chain_breaks, dpi=200,
-                  savefile=self.plots_dir/'pae.png')
-
-        plot_adjs([self.outs[k]["adj"] for k in self.model_rank],
-                  chain_breaks=self.chain_breaks, dpi=200,
-                  savefile=self.plots_dir/'predicted_contacts.png')
-
-        plot_dists([self.outs[k]["dists"] for k in self.model_rank],
-                  chain_breaks=self.chain_breaks, dpi=200,
-                  savefile=self.plots_dir/'predicted_distances.png')
         
-        plot_plddts([self.outs[k]["plddt"] for k in self.model_rank],
-                  chain_breaks=self.chain_breaks, dpi=200,
-                  savefile=self.plots_dir/'plddts.png')
+        if self.make_plots:
+            # Plot properties
+            self.plots_dir = self.out_model / 'plots'
+            self.plots_dir.mkdir(exist_ok=True)
 
-        # Plot structures
-        for i,name in enumerate(self.model_rank):
-            try:
-                plot_protein(self.prediction_results[name], self.chain_breaks)
-                plt.suptitle(f'Rank {i}: {name}, '
-                         f'pLDDT={self.outs[name]["pLDDT"]:.2f}, '
-                         f'pTM={self.outs[name]["pTMscore"]:.2f}')
+            plot_paes([self.outs[k]["pae"] for k in self.model_rank],
+                    chain_breaks=self.chain_breaks, dpi=200,
+                    savefile=self.plots_dir/'pae.png')
 
-                plt.tight_layout()
-                plt.savefig(self.plots_dir/f'rank_{i}_{name}.png', dpi=200)
-                plt.close()
-            except:
-                logging.error(f"Could not generate protein plot for {name}...")
-                raise
+            plot_adjs([self.outs[k]["adj"] for k in self.model_rank],
+                    chain_breaks=self.chain_breaks, dpi=200,
+                    savefile=self.plots_dir/'predicted_contacts.png')
+
+            plot_dists([self.outs[k]["dists"] for k in self.model_rank],
+                    chain_breaks=self.chain_breaks, dpi=200,
+                    savefile=self.plots_dir/'predicted_distances.png')
+            
+            plot_plddts([self.outs[k]["plddt"] for k in self.model_rank],
+                    chain_breaks=self.chain_breaks, dpi=200,
+                    savefile=self.plots_dir/'plddts.png')
+
+            # Plot structures
+            for i,name in enumerate(self.model_rank):
+                try:
+                    plot_protein(self.prediction_results[name], self.chain_breaks)
+                    plt.suptitle(f'Rank {i}: {name}, '
+                            f'pLDDT={self.outs[name]["pLDDT"]:.2f}, '
+                            f'pTM={self.outs[name]["pTMscore"]:.2f}')
+
+                    plt.tight_layout()
+                    plt.savefig(self.plots_dir/f'rank_{i}_{name}.png', dpi=200)
+                    plt.close()
+                except:
+                    logging.error(f"Could not generate protein plot for {name}...")
+                    raise
         
         if self.only_pae_interaction:
             # Calculate the minimum average PAE for the quadrants with
             # interactions, and the minimum rolling window average
             pae = self.outs[self.model_rank[0]]['pae']
-            self.process_pae(pae)
+            min_mean, min_rolling = self.process_pae(pae)
+            iptm_best = self.prediction_results[self.model_rank[0]]['iptm']
+            
+            # Write the scores to a file
+            with open(self.out_model/'scores.txt', 'w') as f:
+                f.write(f"min_mean:{min_mean:.2f}\n")
+                f.write(f"min_rolling:{min_rolling:.2f}\n")
+                f.write(f"iptm:{iptm_best:.2f}\n")
             
             # Erase all .pkl files except for the best model
             pickle_files = list(self.out_model.glob('*.pkl'))
