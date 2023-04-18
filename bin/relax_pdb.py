@@ -2,12 +2,20 @@
 Script to relax a protein structure. Have to use it with the python installed
 in the alphafold module
 '''
-
-import argparse
+import os
+import sys
 from pathlib import Path
 
+sys.path.append(os.fspath(Path(__file__).parent.parent))
+
+import argparse
+
+from absl import logging
 from alphafold.relax import relax
 from alphafold.common import protein
+
+logging.set_verbosity(logging.INFO)
+
 
 def parsing(args: list=None) -> argparse.Namespace:
     """
