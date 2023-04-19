@@ -232,10 +232,11 @@ def predict_structure(
       features_dir=features_dir)
   timings['features'] = time.time() - t_0
 
-  # Write out features as a pickled dictionary.
-  features_output_path = os.path.join(output_dir, 'features.pkl')
-  with open(features_output_path, 'wb') as f:
-    pickle.dump(feature_dict, f, protocol=4)
+  if not screen_mode:
+    # Write out features as a pickled dictionary.
+    features_output_path = os.path.join(output_dir, 'features.pkl')
+    with open(features_output_path, 'wb') as f:
+      pickle.dump(feature_dict, f, protocol=4)
   
   # If only features are needed, return here to exit
   if only_features_chain is not None:
