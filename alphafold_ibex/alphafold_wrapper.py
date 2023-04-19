@@ -54,6 +54,7 @@ class AlphaFold(Executor):
                  only_pae_interaction: bool = False,
                  model_names: List[str] = None,
                  make_plots: bool = True,
+                 screen_mode: bool = False,
                  **kw):
         """
         Instantiate variables
@@ -101,6 +102,9 @@ class AlphaFold(Executor):
                 List of models to run. If None, all models will be run.
             make_plots (bool, optional):
                 If True, the plots will be generated. Defaults to True.
+            screen_mode (bool, optional):
+                If True, only the quality scores of the models will be written
+                to a text file. No output pickle or pdbs will be saved.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -132,6 +136,7 @@ class AlphaFold(Executor):
         self.keep_msas = keep_msas
         self.only_pae_interaction = only_pae_interaction
         self.make_plots = make_plots
+        self.screen_mode = screen_mode
         
         if model_names is None:
             self.model_names_str = ''
@@ -207,6 +212,7 @@ class AlphaFold(Executor):
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
             f'--recycles={self.recycles} '
             f'{self.model_names_str}'
+            f'--screen_mode={str(self.screen_mode).lower()} '
         ).split()
 
         if 'multimer' in self.model_preset:
@@ -324,6 +330,9 @@ class AlphaFold(Executor):
             if not self.keep_msas:
                 shutil.rmtree(self.out_model/'msas')
             
+            return None
+        
+        if self.screen_mode:
             return None
 
         # Read outputs

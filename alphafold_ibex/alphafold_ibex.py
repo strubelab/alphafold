@@ -26,6 +26,7 @@ class AlphafoldIbex(IbexRun):
         only_pae_interaction: bool = False,
         model_names: List[str] = None,
         make_plots: bool = True,
+        screen_mode: bool = False,
         **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -55,6 +56,9 @@ class AlphafoldIbex(IbexRun):
                 will be run. Defaults to None.
             make_plots (bool, optional):
                 If True, the plots will be generated. Defaults to True.
+            screen_mode (bool, optional):
+                If True, only the quality scores of the models will be written
+                to a text file. No output pickle or pdbs will be saved.
         """
         self.sequences = sequences
         
@@ -82,6 +86,7 @@ class AlphafoldIbex(IbexRun):
         self.features_dir = features_dir
         self.only_pae_interaction = only_pae_interaction
         self.make_plots = make_plots
+        self.screen_mode = screen_mode
 
         if model_names is None:
             self.model_names_str = 'None'
@@ -206,7 +211,7 @@ class AlphafoldIbex(IbexRun):
             f'{self.use_precomputed_msas} {self.gpu_type} {self.old_uniclust} '
             f'{self.max_template_date} {self.only_features_chain} '
             f'{self.features_dir} {self.only_pae_interaction} '
-            f'{self.model_names_str} {self.make_plots}'
+            f'{self.model_names_str} {self.make_plots} {self.screen_mode}'
         )
         
         if self.only_features_chain:

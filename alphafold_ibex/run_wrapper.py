@@ -56,6 +56,7 @@ else:
     model_names = None
 
 make_plots = sys.argv[14] == 'True'
+screen_mode = sys.argv[15] == 'True'
 
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
@@ -73,7 +74,8 @@ for seqs in sequences:
                 features_dir=features_dir,
                 only_pae_interaction=only_pae_interaction,
                 model_names=model_names,
-                make_plots=make_plots)
+                make_plots=make_plots,
+                screen_mode=screen_mode)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

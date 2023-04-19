@@ -162,6 +162,11 @@ flags.DEFINE_string('features_dir', None, 'Directory with the '
 flags.DEFINE_list('model_names', None, 'List of model names to run. If None, '
                   'run all models for the given preset.')
 
+# Additional flag to set a `screen mode`
+flags.DEFINE_boolean('screen_mode', False, 'If True, the only output will be the'
+                     ' quality scores in a text file, to save memory and time '
+                     'when running many models.')
+
 
 FLAGS = flags.FLAGS
 
@@ -204,7 +209,8 @@ def predict_structure(
     random_seed: int,
     models_to_relax: ModelsToRelax,
     only_features_chain: str,
-    features_dir: str):
+    features_dir: str,
+    screen_mode: bool):
   """Predicts structure using AlphaFold for the given sequence."""
   logging.info('Predicting %s', fasta_name)
   timings = {}
@@ -240,6 +246,7 @@ def predict_structure(
   relaxed_pdbs = {}
   relax_metrics = {}
   ranking_confidences = {}
+  iptms = {}
 
   # Run the models.
   num_models = len(model_runners)
@@ -273,6 +280,13 @@ def predict_structure(
 
     plddt = prediction_result['plddt']
     ranking_confidences[model_name] = prediction_result['ranking_confidence']
+    # Addition: save iptm as well, if present
+    if 'iptm' in prediction_result:
+      iptms[model_name] = prediction_result['iptm']
+    
+    # Skip the rest if screen_mode is enabled.
+    if screen_mode:
+      continue
 
     # Remove jax dependency from results.
     np_prediction_result = _jnp_to_np(dict(prediction_result))
@@ -329,20 +343,28 @@ def predict_structure(
     with open(relaxed_output_path, 'w') as f:
       f.write(relaxed_pdb_str)
 
-  # Write out relaxed PDBs in rank order.
-  for idx, model_name in enumerate(ranked_order):
-    ranked_output_path = os.path.join(output_dir, f'ranked_{idx}.pdb')
-    with open(ranked_output_path, 'w') as f:
-      if model_name in relaxed_pdbs:
-        f.write(relaxed_pdbs[model_name])
-      else:
-        f.write(unrelaxed_pdbs[model_name])
+  if not screen_mode:
+    # Write out relaxed PDBs in rank order.
+    for idx, model_name in enumerate(ranked_order):
+      ranked_output_path = os.path.join(output_dir, f'ranked_{idx}.pdb')
+      with open(ranked_output_path, 'w') as f:
+        if model_name in relaxed_pdbs:
+          f.write(relaxed_pdbs[model_name])
+        else:
+          f.write(unrelaxed_pdbs[model_name])
 
   ranking_output_path = os.path.join(output_dir, 'ranking_debug.json')
   with open(ranking_output_path, 'w') as f:
     label = 'iptm+ptm' if 'iptm' in prediction_result else 'plddts'
     f.write(json.dumps(
         {label: ranking_confidences, 'order': ranked_order}, indent=4))
+  
+  ## Addition: save iptms as well, if present
+  if len(iptms) > 0:
+    iptms_output_path = os.path.join(output_dir, 'iptms.json')
+    with open(iptms_output_path, 'w') as f:
+      f.write(json.dumps(
+        {'iptms': iptms, 'order': ranked_order}, indent=4))
 
   logging.info('Final timings for %s: %s', fasta_name, timings)
 
@@ -526,7 +548,8 @@ def main(argv):
         random_seed=random_seed,
         models_to_relax=FLAGS.models_to_relax,
         only_features_chain=only_features_chain,
-        features_dir=features_dir)
+        features_dir=features_dir,
+        screen_mode=FLAGS.screen_mode)
 
 
 if __name__ == '__main__':
