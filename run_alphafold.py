@@ -282,7 +282,7 @@ def predict_structure(
     ranking_confidences[model_name] = prediction_result['ranking_confidence']
     # Addition: save iptm as well, if present
     if 'iptm' in prediction_result:
-      iptms[model_name] = prediction_result['iptm']
+      iptms[model_name] = float(prediction_result['iptm'])
     
     # Skip the rest if screen_mode is enabled.
     if screen_mode:
