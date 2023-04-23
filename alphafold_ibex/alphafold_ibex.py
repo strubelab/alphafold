@@ -135,8 +135,8 @@ class AlphafoldIbex(IbexRun):
         # Set different times for features-only or models-only modes
         if self.only_features_chain:
             if med_len<500:
-                self.mem = 32
-                self.time_per_command = 90
+                self.mem = 64
+                self.time_per_command = 180
             elif med_len<1000:
                 self.mem = 64
                 self.time_per_command = 300
