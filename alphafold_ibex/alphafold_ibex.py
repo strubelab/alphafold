@@ -124,20 +124,21 @@ class AlphafoldIbex(IbexRun):
     def get_gpus_hours(self):
         """
         Calcualte the amount of GPUs and how many hours to allocate to the job.
-        It looks at the median model length from all the groups of sequences
+        It looks at the 90th percentile of the lengths from all the sequences/models
         provided.
         """
         total_lengths = [sum([len(s) for s in seqs]) for seqs in self.sequences]
-        med_len = np.median(total_lengths)
+        # Calculate 90th percentile of lengths
+        len90 = np.percentile(total_lengths, 90)
         
         self.gpus = 1
 
         # Set different times for features-only or models-only modes
         if self.only_features_chain:
-            if med_len<500:
+            if len90<500:
                 self.mem = 64
                 self.time_per_command = 180
-            elif med_len<1000:
+            elif len90<1000:
                 self.mem = 64
                 self.time_per_command = 300
             else:
@@ -145,13 +146,13 @@ class AlphafoldIbex(IbexRun):
                 self.time_per_command = 600
         
         elif self.features_dir:
-            if med_len<500:
+            if len90<500:
                 self.mem = 64
                 self.time_per_command = 60
-            elif med_len<1000:
+            elif len90<1000:
                 self.mem = 64
                 self.time_per_command = 120
-            elif med_len<2000:
+            elif len90<2000:
                 self.mem = 128
                 self.time_per_command = 240
             else:
@@ -159,13 +160,13 @@ class AlphafoldIbex(IbexRun):
                 self.time_per_command = 600
         
         else:
-            if med_len<200:
+            if len90<200:
                 self.mem = 64
                 self.time_per_command = 120
-            elif med_len<500:
+            elif len90<500:
                 self.mem = 64
                 self.time_per_command = 300
-            elif med_len<1000:
+            elif len90<1000:
                 self.mem = 128
                 self.time_per_command = 600
             else:
