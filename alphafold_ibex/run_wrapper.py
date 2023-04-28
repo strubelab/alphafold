@@ -27,7 +27,8 @@ logging.getLogger().setLevel(logging.INFO)
 # ch.setFormatter(formatter)
 # logging.getLogger().addHandler(ch)
 
-# Take the file with sequences and the output directory from the command-line inputs
+#####################
+###### READ ARGUMENTS
 seqs_file = Path(sys.argv[1])
 models_to_relax = sys.argv[2]
 out_dir = Path(sys.argv[3])
@@ -58,6 +59,13 @@ else:
 make_plots = sys.argv[14] == 'True'
 screen_mode = sys.argv[15] == 'True'
 
+random_seed = sys.argv[16]
+if random_seed == 'None':
+    random_seed = None
+else:
+    random_seed = int(random_seed)
+#####################
+
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
 
@@ -75,7 +83,8 @@ for seqs in sequences:
                 only_pae_interaction=only_pae_interaction,
                 model_names=model_names,
                 make_plots=make_plots,
-                screen_mode=screen_mode)
+                screen_mode=screen_mode,
+                random_seed=random_seed)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

@@ -55,6 +55,7 @@ class AlphaFold(Executor):
                  model_names: List[str] = None,
                  make_plots: bool = True,
                  screen_mode: bool = False,
+                 random_seed: int = None,
                  **kw):
         """
         Instantiate variables
@@ -105,6 +106,9 @@ class AlphaFold(Executor):
             screen_mode (bool, optional):
                 If True, only the quality scores of the models will be written
                 to a text file. No output pickle or pdbs will be saved.
+            random_seed (int, optional):
+                Random seed to use for the data pipeline. Doesn't guarantee
+                deterministic results. Defaults to None.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -142,6 +146,11 @@ class AlphaFold(Executor):
             self.model_names_str = ''
         else:
             self.model_names_str = f"--model_names={','.join(model_names)} "
+        
+        if random_seed is None:
+            self.random_seed_str = ''
+        else:
+            self.random_seed_str = f"--random_seed={random_seed} "
         
         if (not self.old_uniclust):
             self.uniref30 = self.ALPHAFOLD_DATA / 'uniref30/UniRef30_2022_02'
@@ -212,6 +221,7 @@ class AlphaFold(Executor):
             f'--use_gpu_relax={str(self.use_gpu_relax).lower()} '
             f'--recycles={self.recycles} '
             f'{self.model_names_str}'
+            f'{self.random_seed_str}'
             f'--screen_mode={str(self.screen_mode).lower()} '
         ).split()
 
