@@ -27,7 +27,7 @@ class AlphafoldIbex(IbexRun):
         model_names: List[str] = None,
         make_plots: bool = True,
         screen_mode: bool = False,
-        random_seed: Union[int, None] = None,
+        random_seeds: List[int] = None,
         **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -60,9 +60,9 @@ class AlphafoldIbex(IbexRun):
             screen_mode (bool, optional):
                 If True, only the quality scores of the models will be written
                 to a text file. No output pickle or pdbs will be saved.
-            random_seed (int, optional):
-                Random seed to use for the data pipeline. Doesn't guarantee
-                deterministic results. Defaults to None.
+            random_seed (List[int], optional):
+                Random seeds to use for the data pipeline. One integer per model.
+                Doesn't guarantee deterministic results. Defaults to None.
         """
         self.sequences = sequences
         
@@ -91,7 +91,12 @@ class AlphafoldIbex(IbexRun):
         self.only_pae_interaction = only_pae_interaction
         self.make_plots = make_plots
         self.screen_mode = screen_mode
-        self.random_seed = random_seed
+        self.random_seeds = random_seeds
+        
+        if self.random_seeds:
+            assert len(self.sequences) == len(self.random_seeds), (
+                'The number of random seeds must be equal to the number of '
+                'sequences')
 
         if model_names is None:
             self.model_names_str = 'None'
@@ -195,6 +200,24 @@ class AlphafoldIbex(IbexRun):
                 pickle.dump(job_seqs, f)
             
             seq_ind += self.commands_per_job
+    
+    
+    def write_random_seeds(self):
+        """
+        Write the random seeds in separate files, according to the number of
+        commands to be run per job.
+        """
+        seq_ind=0
+        
+        for job_num in range(self.njobs):
+            job_seeds = (
+                self.random_seeds[ seq_ind : seq_ind + self.commands_per_job ])
+
+            seeds_file = self.sequences_dir / f'sequences{job_num}.seeds.pkl'
+            with open(seeds_file, 'wb') as f:
+                pickle.dump(job_seeds, f)
+            
+            seq_ind += self.commands_per_job
 
 
     def prepare(self):
@@ -209,6 +232,9 @@ class AlphafoldIbex(IbexRun):
 
         self.write_sequences()
         
+        if self.random_seeds:
+            self.write_random_seeds()
+        
         self.python_command = (
             f'{self.conda_env}/bin/python {self.python_file} '
             '${seq_file} '
@@ -218,7 +244,7 @@ class AlphafoldIbex(IbexRun):
             f'{self.max_template_date} {self.only_features_chain} '
             f'{self.features_dir} {self.only_pae_interaction} '
             f'{self.model_names_str} {self.make_plots} {self.screen_mode} '
-            f'{self.random_seed}'
+            f'{self.random_seeds is not None}'
         )
         
         if self.only_features_chain:

@@ -59,19 +59,24 @@ else:
 make_plots = sys.argv[14] == 'True'
 screen_mode = sys.argv[15] == 'True'
 
-random_seed = sys.argv[16]
-if random_seed == 'None':
-    random_seed = None
-else:
-    random_seed = int(random_seed)
+read_random_seeds = sys.argv[16] == 'True'
 #####################
 
+# Read sequences
 with open(seqs_file, 'rb') as f:
     sequences = pickle.load(f)
 
+# Read random seeds
+if read_random_seeds:
+    seeds_file = seqs_file.parent / f"{seqs_file.stem}.seeds.pkl"
+    with open(seeds_file, 'rb') as f:
+        random_seeds = pickle.load(f)
+else:
+    random_seeds = [None] * len(sequences)
+
 
 # Run the Program wrapper for every sequence
-for seqs in sequences:
+for i, seqs in enumerate(sequences):
     try:
         exe = AlphaFold(seqs, out_dir=out_dir, recycles=recycles,
                 models_to_relax=models_to_relax,
@@ -84,7 +89,7 @@ for seqs in sequences:
                 model_names=model_names,
                 make_plots=make_plots,
                 screen_mode=screen_mode,
-                random_seed=random_seed)
+                random_seed=random_seeds[i])
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     
