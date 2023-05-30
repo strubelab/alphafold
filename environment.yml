@@ -9,15 +9,14 @@ channels:
 dependencies:
   - biopython
   - git
+  - ipython
   - matplotlib
   - numpy
-  - nodejs
   - pandas
   - pip
   - pip:
     - -r requirements.txt
   - python=3.10.4
-  - python-language-server
   - scikit-learn
   - scipy
 
