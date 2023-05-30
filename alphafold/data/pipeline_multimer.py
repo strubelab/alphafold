@@ -316,6 +316,12 @@ class DataPipeline:
                          'features.pkl')
         with open(features_path, 'rb') as f:
           chain_features = pickle.load(f)
+
+        # Edit the features mentioning the chain ID
+        chain_features['auth_chain_id'] = np.asarray(chain_id, dtype=np.object_)
+        chain_features['domain_name'] = np.asarray(
+            f'chain_{chain_id}'.encode('utf-8'), dtype=np.object_)
+          
       else:
         # Run the monomer pipeline on a single chain
         chain_features = self._process_single_chain(
