@@ -283,7 +283,7 @@ class AlphafoldIbex(IbexRun):
                 f'#SBATCH --mem={self.mem}G\n'
                 f'#SBATCH --gres=gpu:{self.gpus}\n'
                 f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
-                f'#SBATCH --constraint=[{self.gpu_type}]\n'
+                f'#SBATCH --constraint={self.gpu_type}\n'
                 f'#SBATCH --array=0-{self.njobs-1}\n'
                 f'{self.reservation_string}'
                 f'{self.mail_string}'
