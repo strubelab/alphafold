@@ -12,6 +12,8 @@ import json
 from collections import defaultdict
 import math
 
+from typing import Union, Tuple, List, Dict
+
 
 def parse_atm_record(line):
     '''Get the atm record
@@ -35,9 +37,32 @@ def parse_atm_record(line):
     return record
 
 
-def read_pdb(pdbfile):
-    '''Read a pdb file per chain
-    '''
+def read_pdb(pdbfile:str) -> Tuple[Dict[str,List[str]],
+                                   Dict[str,List[List[float]]],
+                                   Dict[str,List[int]],
+                                   Dict[str,List[int]]]:
+    """
+    Read a pdb file per chain
+
+    Args:
+        pdbfile (str): Path for the pdb file
+
+    Returns:
+        Tuple[dict,dict,dict,dict]: Dictionaries with various information per chain
+    
+    - pdb_chains: Dictionary with the lines of the pdb file for each chain. The
+            keys are the chain ids and the values are lists of strings with
+            the lines
+    - chain_coords: Dictionary with the coordinates for each chain. The keys are
+            the chain ids and the values are lists of lists with the x,y,z
+            coordinates for each atom
+    - chain_CA_inds: Dictionary with the indices of the CA atoms for each chain.
+            The keys are the chain ids and the values are lists of integers
+            with the indices
+    - chain_CB_inds: Dictionary with the indices of the CB atoms for each chain.
+            The keys are the chain ids and the values are lists of integers
+            with the indices
+    """
     pdb_chains = {}
     chain_coords = {}
     chain_CA_inds = {}
@@ -69,7 +94,16 @@ def read_pdb(pdbfile):
     return pdb_chains, chain_coords, chain_CA_inds, chain_CB_inds
 
 
-def get_best_plddt(work_dir):
+def get_best_plddt(work_dir:str) -> np.ndarray:
+    """
+    Gets the array with pLDDT scores for the best model
+    
+    Args:
+        work_dir (str): Directory with the results from AlphaFold
+    
+    Returns:
+        np.ndarray: Array with the pLDDT scores for the best model
+    """
     json_path = os.path.join(work_dir,'ranking_debug.json')
     best_model = json.load(open(json_path,'r'))['order'][0]
     best_plddt = pickle.load(open(os.path.join(work_dir,"result_{}.pkl".format(best_model)),'rb'))['plddt']
@@ -77,9 +111,22 @@ def get_best_plddt(work_dir):
     return best_plddt
 
 
-def read_plddt(best_plddt, chain_CA_inds):
-    '''Get the plDDT for each chain
-    '''
+def read_plddt(best_plddt:np.ndarray, chain_CA_inds:Dict[str,List[int]]
+               ) -> Dict[str,np.ndarray]:
+    """
+    Get the pLDDT scores per chain
+    
+    Args:
+        best_plddt (np.ndarray): Array with the pLDDT scores for the best model
+        chain_CA_inds (dict): Dictionary with the indices of the CA atoms for
+                each chain. The keys are the chain ids and the values are lists
+                of integers with the indices
+    
+    Returns:
+        Dict[str,np.ndarray]: Dictionary with the pLDDT scores per chain. The
+                keys are the chain ids and the values are numpy arrays with
+                the pLDDT scores
+    """
     chain_names = chain_CA_inds.keys()
     chain_lengths = dict()
     for name in chain_names:
@@ -95,13 +142,29 @@ def read_plddt(best_plddt, chain_CA_inds):
     return plddt_per_chain
 
 
-def score_complex(path_coords, path_CB_inds, path_plddt):
-    '''
+def score_complex(path_coords:Dict[str,List[List[float]]],
+                  path_CB_inds:Dict[str,List[int]],
+                  path_plddt:Dict[str,np.ndarray]) -> Tuple[float,int]:
+    """
     Score all interfaces in the current complex
 
     Modified from the score_complex() function in MoLPC repo: 
     https://gitlab.com/patrickbryant1/molpc/-/blob/main/src/complex_assembly/score_entire_complex.py#L106-154
-    '''
+    
+    Args:
+        path_coords (dict): Dictionary with the coordinates for each chain. The
+                keys are the chain ids and the values are lists of lists with
+                the x,y,z coordinates for each atom
+        path_CB_inds (dict): Dictionary with the indices of the CB atoms for
+                each chain. The keys are the chain ids and the values are lists
+                of integers with the indices
+        path_plddt (dict): Dictionary with the pLDDT scores per chain. The
+                keys are the chain ids and the values are numpy arrays with
+                the pLDDT scores
+    
+    Returns:
+        Tuple[float,int]: Tuple with the complex score and the number of chains
+    """
 
     chains = [*path_coords.keys()]
     chain_inds = np.arange(len(chains))
@@ -134,10 +197,16 @@ def score_complex(path_coords, path_CB_inds, path_plddt):
     return complex_score, len(chains)
 
 
-def calculate_mpDockQ(complex_score):
+def calculate_mpDockQ(complex_score:float) -> float:
     """
     A function that returns a complex's mpDockQ score after 
     calculating complex_score
+    
+    Args:
+        complex_score (float): The complex score calculated by score_complex()
+    
+    Returns:
+        float: The mpDockQ score
     """
     L = 0.827
     x_0 = 261.398
@@ -146,14 +215,28 @@ def calculate_mpDockQ(complex_score):
     return L/(1+math.exp(-1*k*(complex_score-x_0))) + b
 
 
-def calc_pdockq(chain_coords, chain_plddt, t):
-    '''Calculate the pDockQ scores
+def calc_pdockq(chain_coords, chain_plddt, t) -> Tuple[float,float,int]:
+    """
+    Calculate the pDockQ scores
     pdockQ = L / (1 + np.exp(-k*(x-x0)))+b
     L= 0.724 x0= 152.611 k= 0.052 and b= 0.018
 
     Modified from the calc_pdockq() from FoldDock repo: 
     https://gitlab.com/ElofssonLab/FoldDock/-/blob/main/src/pdockq.py#L62
-    '''
+    
+    Args:
+        chain_coords (dict): Dictionary with the coordinates for each chain. The
+                keys are the chain ids and the values are lists of lists with
+                the x,y,z coordinates for each atom
+        chain_plddt (dict): Dictionary with the pLDDT scores per chain. The
+                keys are the chain ids and the values are numpy arrays with
+                the pLDDT scores
+        t (float): Distance threshold for the interface
+    
+    Returns:
+        Tuple[float,float,int]: Tuple with the pDockQ score, the average pLDDT
+                score for the interface and the number of interface contacts
+    """
 
     #Get coords and plddt per chain
     ch1, ch2 = [*chain_coords.keys()]
@@ -181,8 +264,16 @@ def calc_pdockq(chain_coords, chain_plddt, t):
     return pdockq, avg_if_plddt, n_if_contacts
 
 
-def obtain_mpdockq(work_dir):
-    """Returns mpDockQ if more than two chains otherwise return pDockQ"""
+def obtain_mpdockq(work_dir:str) -> Union[Tuple[float,float,int], str]:
+    """
+    Returns mpDockQ if more than two chains otherwise return pDockQ
+
+    Args:
+        work_dir (str): Directory with the results from AlphaFold
+
+    Returns:
+        Union[Tuple[float,float,int], str]: Quality scores for the complex
+    """
     pdb_path = os.path.join(work_dir,'ranked_0.pdb')
     pdb_chains, chain_coords, chain_CA_inds, chain_CB_inds = read_pdb(pdb_path)
     best_plddt = get_best_plddt(work_dir)
@@ -196,3 +287,11 @@ def obtain_mpdockq(work_dir):
         mpDockq_or_pdockq = "None"
     return mpDockq_or_pdockq
 
+
+# test case
+if __name__ == '__main__':
+    pdbdir = ("/Volumes/weka_projects/c2217/alphafold_strube/runs/denovo_screen/"
+              "dn47_top_full/Osjap04g06970.1-1_A0A0N7KMK5-1")
+    
+    scores = obtain_mpdockq(pdbdir)
+    print(scores)
