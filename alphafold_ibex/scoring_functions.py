@@ -9,7 +9,31 @@ import os
 import numpy as np
 import pickle
 import json
+from collections import defaultdict
 import math
+
+
+def parse_atm_record(line):
+    '''Get the atm record
+    '''
+    record = defaultdict()
+    record['name'] = line[0:6].strip()
+    record['atm_no'] = int(line[6:11].strip())
+    record['atm_name'] = line[12:16].strip()
+    record['atm_alt'] = line[17]
+    record['res_name'] = line[17:20].strip()
+    record['chain'] = line[21]
+    record['res_no'] = int(line[22:26].strip())
+    record['insert'] = line[26].strip()
+    record['resid'] = line[22:29]
+    record['x'] = float(line[30:38])
+    record['y'] = float(line[38:46])
+    record['z'] = float(line[46:54])
+    record['occ'] = float(line[54:60])
+    record['B'] = float(line[60:66])
+
+    return record
+
 
 def read_pdb(pdbfile):
     '''Read a pdb file per chain
