@@ -10,22 +10,8 @@ from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 import sys
-
-def validate_file(input:str) -> Path:
-        """
-        Validate that the input is an existing file
-
-        Args:
-            input (str): Input file
-
-        Returns:
-            Path
-        """
-        inp = Path(input)
-        if not inp.is_file():
-            raise ValueError
-
-        return inp
+from typing import List
+from Bio.SeqRecord import SeqRecord
 
 
 def read_sequences(input:str) -> list:
@@ -49,6 +35,26 @@ def read_sequences(input:str) -> list:
         raise ValueError('Input must be either a fasta file or a directory with fasta files.')
     
     return sequences
+
+def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
+    
+    print(f'Checking for existing features in {out_dir}...')
+        
+    all_ids = [s[0].id.split('|')[1] for s in sequences]
+
+    # Get the ids of the sequences that have a `features.pkl` file
+    completed = []
+    for sid in all_ids:
+        features_file = out_dir / sid / 'features.pkl'
+        if features_file.exists():
+            completed.append(sid)
+    
+    print(f'Found {len(completed)} sequences with features already calculated.')
+
+    # Get the sequences that don't have features created yet
+    missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
+    
+    return missing_sequences
 
 
 def parsing(args: list=None) -> argparse.Namespace:
@@ -144,11 +150,9 @@ if __name__ == '__main__':
 
     args = parsing()
     
-    files_input = [validate_file(f) for f in args.input]
-    
     # Read all sequences in every input file or directory and put together in a list
     sequences = []
-    for f in files_input:
+    for f in args.input:
         sequences += read_sequences(f)
     
     sequences = [[s] for s in sequences]
@@ -159,31 +163,14 @@ if __name__ == '__main__':
     out_dir = Path(args.destination)
     
     if out_dir.exists():
-    
-        print(f'Checking for existing features in {out_dir}...')
-        
-        all_ids = [s[0].id.split('|')[1] for s in sequences]
-
-        # Get the ids of the sequences that have a `features.pkl` file
-        completed = []
-        for sid in all_ids:
-            features_file = out_dir / sid / 'features.pkl'
-            if features_file.exists():
-                completed.append(sid)
-        
-        print(f'Found {len(completed)} sequences with features already calculated.')
-
-        # Get the sequences that don't have features created yet
-        missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
-    
+        missing_sequences = check_missing_sequences(out_dir, sequences)
     else:
-        
         out_dir.mkdir()
-        
         missing_sequences = sequences
     
     print(f'Number of features to generate: {len(missing_sequences)}')
-    #########
+    
+    ######### Get the rest of the parameters
     
     if args.wekafs:
         gpu_type = 'a100'
