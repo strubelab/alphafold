@@ -206,10 +206,11 @@ if __name__ == '__main__':
         f.write('\n')
     
     # Run AlphaFold
-    print('Running AlphaFold to calculate features...')
-    exe = AlphafoldIbex(missing_sequences, out_dir=out_dir, jobname='AF_features',
-                        gpu_type=gpu_type, only_features_chain='A',
-                        mail=args.mail, time_per_command=time, mem=mem,
-                        max_jobs=args.max_jobs, old_uniclust=args.old_uniclust,
-                        max_template_date=args.max_template_date)
-    exe.run()
+    if len(missing_sequences) > 0:
+        print('Running AlphaFold to calculate features...')
+        exe = AlphafoldIbex(missing_sequences, out_dir=out_dir, jobname='AF_features',
+                            gpu_type=gpu_type, only_features_chain='A',
+                            mail=args.mail, time_per_command=time, mem=mem,
+                            max_jobs=args.max_jobs, old_uniclust=args.old_uniclust,
+                            max_template_date=args.max_template_date)
+        exe.run()
