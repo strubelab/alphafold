@@ -11,9 +11,6 @@ from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 import sys
 
-from absl import logging
-logging.set_verbosity(logging.INFO)
-
 def validate_file(input:str) -> Path:
         """
         Validate that the input is an existing file
@@ -156,14 +153,14 @@ if __name__ == '__main__':
     
     sequences = [[s] for s in sequences]
     
-    logging.info(f'Read {len(sequences)} sequences...')
+    print(f'Read {len(sequences)} sequences...')
     
     ######### Check for any existing features
     out_dir = Path(args.destination)
     
     if out_dir.exists():
     
-        logging.info(f'Checking for existing features in {out_dir}...')
+        print(f'Checking for existing features in {out_dir}...')
         
         all_ids = [s[0].id.split('|')[1] for s in sequences]
 
@@ -174,7 +171,7 @@ if __name__ == '__main__':
             if features_file.exists():
                 completed.append(sid)
         
-        logging.info(f'Found {len(completed)} sequences with features already calculated.')
+        print(f'Found {len(completed)} sequences with features already calculated.')
 
         # Get the sequences that don't have features created yet
         missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
@@ -185,7 +182,7 @@ if __name__ == '__main__':
         
         missing_sequences = sequences
     
-    logging.info(f'Number of features to generate: {len(missing_sequences)}')
+    print(f'Number of features to generate: {len(missing_sequences)}')
     #########
     
     if args.wekafs:
@@ -209,7 +206,7 @@ if __name__ == '__main__':
         f.write('\n')
     
     # Run AlphaFold
-    logging.info('Running AlphaFold to calculate features...')
+    print('Running AlphaFold to calculate features...')
     exe = AlphafoldIbex(missing_sequences, out_dir=out_dir, jobname='AF_features',
                         gpu_type=gpu_type, only_features_chain='A',
                         mail=args.mail, time_per_command=time, mem=mem,
