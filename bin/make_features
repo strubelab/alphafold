@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+
+"""
+Script to make features for a list of protein sequences
+"""
+
+import argparse
+from Bio import SeqIO
+from pathlib import Path
+from datetime import date
+from alphafold_ibex.alphafold_ibex import AlphafoldIbex
+import sys
+
+from absl import logging
+logging.set_verbosity(logging.INFO)
+
+def validate_file(input:str) -> Path:
+        """
+        Validate that the input is an existing file
+
+        Args:
+            input (str): Input file
+
+        Returns:
+            Path
+        """
+        inp = Path(input)
+        if not inp.is_file():
+            raise ValueError
+
+        return inp
+
+
+def read_sequences(input:str) -> list:
+    """
+    Get an input of either a fasta file or a directory and read all the sequences
+    in it
+    """
+    
+    input = Path(input)
+    
+    if not input.exists():
+        raise ValueError('Input file or directory does not exist.')
+    
+    if input.is_file():
+        sequences = list(SeqIO.parse(input, 'fasta'))
+    elif input.is_dir():
+        sequences = []
+        for f in input.glob('*.fasta'):
+            sequences += list(SeqIO.parse(f, 'fasta'))
+    else:
+        raise ValueError('Input must be either a fasta file or a directory with fasta files.')
+    
+    return sequences
+
+
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Args:
+        args (list, optional): List of the arguments to be parsed (only to be
+            used for testing). If none is provided, it is taken from sys.argv.
+            Defaults to None.
+
+    Returns:
+        argparse.Namespace
+    """
+
+    def validate_num(num:str):
+        """
+        Validate the number in the arguments for gpu, mem, time and recycles
+
+        Args:
+            num (str): Number provided
+        """
+        if num=='auto':
+            return num
+        
+        return int(num)
+    
+    def validate_date(d:str):
+        """
+        Validate the date format
+
+        Args:
+            d (str): date in YYYY-MM-DD format
+
+        Returns:
+            str: same date if valid
+        """
+        dsplit = d.split('-')
+        if len(dsplit) < 3:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        elif int(dsplit[1]) > 12:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        
+        return d
+
+    parser = argparse.ArgumentParser(description=('Takes one or more FASTA '
+        'files with amino acid sequences, and submits a '
+        'job array to ibex to make features for each sequence.'))
+
+    parser.add_argument("--input", help=('Fasta file(s) with the sequence(s) '
+        'to model. Provide one fasta file for each model that you want to '
+        'produce.'), nargs='+')
+
+    parser.add_argument("--destination", 
+        help=('Path for saving the resulting AlphaFold features. It will create '
+        'one subdirectory for each model. Also will contain the sequence files ' 
+        'as they were submitted to ibex, the script that was submitted and the '
+        'ibex stdout files.'), required=True)
+    
+    parser.add_argument("--time", help=('Time in minutes to give to each job. '
+        '(default="auto")'), type=validate_num, default='auto')
+
+    parser.add_argument("--mem", help=('Memory in GB to allocate to each job. '
+        '(default="auto")'), type=validate_num, default='auto')
+
+    parser.add_argument("--mail", help=('Email to send notifications about the '
+                'job progess in ibex.'), type=str)
+    
+    parser.add_argument("--max_jobs",
+        help=("Maximum number of jobs to submit simultaneously to ibex. Default=1990"),
+        type=int, default=1990)
+    
+    parser.add_argument("--wekafs",
+        help=("Whether to use the databases in wekafs (you need to have access)"),
+        action='store_true')
+    
+    parser.add_argument("--old_uniclust",
+        help=("If hhblits is causing an error along the lines of `ERROR: did "
+              "not find ### match states in sequence 1 of ##########`, try "
+              "using the older version of the UniClust database (UniRef30_2021_03) "
+              "to calculate the MSAs with HHblits."), action='store_true')
+    
+    parser.add_argument("--max_template_date",
+        help=('Maximum template release date to consider. Give value in '
+              'YYYY-MM-DD format.'), type=validate_date,
+        default=date.today().isoformat())
+ 
+    return parser.parse_args(args)
+
+
+if __name__ == '__main__':
+
+    args = parsing()
+    
+    files_input = [validate_file(f) for f in args.input]
+    
+    # Read all sequences in every input file or directory and put together in a list
+    sequences = []
+    for f in files_input:
+        sequences += read_sequences(f)
+    
+    sequences = [[s] for s in sequences]
+    
+    logging.info(f'Read {len(sequences)} sequences...')
+    
+    ######### Check for any existing features
+    out_dir = Path(args.destination)
+    
+    if out_dir.exists():
+    
+        logging.info(f'Checking for existing features in {out_dir}...')
+        
+        all_ids = [s[0].id.split('|')[1] for s in sequences]
+
+        # Get the ids of the sequences that have a `features.pkl` file
+        completed = []
+        for sid in all_ids:
+            features_file = out_dir / sid / 'features.pkl'
+            if features_file.exists():
+                completed.append(sid)
+        
+        logging.info(f'Found {len(completed)} sequences with features already calculated.')
+
+        # Get the sequences that don't have features created yet
+        missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
+    
+    else:
+        
+        out_dir.mkdir()
+        
+        missing_sequences = sequences
+    
+    logging.info(f'Number of features to generate: {len(missing_sequences)}')
+    #########
+    
+    if args.wekafs:
+        gpu_type = 'a100'
+    else:
+        gpu_type = 'v100'
+        
+    if args.time=='auto':
+        time = 300
+    else:
+        time = args.time
+    
+    if args.mem=='auto':
+        mem = 64
+    else:
+        mem = args.mem
+
+    # Save command to output dir
+    with open(out_dir/'command.txt', 'w') as f:
+        f.write(' '.join(sys.argv))
+        f.write('\n')
+    
+    # Run AlphaFold
+    logging.info('Running AlphaFold to calculate features...')
+    exe = AlphafoldIbex(missing_sequences, out_dir=out_dir, jobname='AF_features',
+                        gpu_type=gpu_type, only_features_chain='A',
+                        mail=args.mail, time_per_command=time, mem=mem,
+                        max_jobs=args.max_jobs, old_uniclust=args.old_uniclust,
+                        max_template_date=args.max_template_date)
+    exe.run()
