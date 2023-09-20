@@ -120,6 +120,11 @@ def parsing(args: list=None) -> argparse.Namespace:
         'as they were submitted to ibex, the script that was submitted and the '
         'ibex stdout files.'), required=True)
     
+    parser.add_argument("--screen_mode",
+        help=("Whether to run AlphaFold in screen mode, which only saves the "
+              "quality scores to text files and doesn't do relaxation. Default=False"),
+        action='store_true')
+    
     parser.add_argument("--time", help=('Time in minutes to give to each job. '
         '(default=30)'), type=int, default=30)
 
@@ -204,7 +209,7 @@ if __name__ == '__main__':
                     models_to_relax='none',
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     gpu_type=args.gpu_type,
-                    screen_mode=True,
+                    screen_mode=args.screen_mode,
                     features_dir=features_dir,
                     mail=args.mail,
                     time_per_command=args.time,
