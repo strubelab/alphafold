@@ -241,3 +241,34 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
     sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
     
     return sequences_to_model
+
+def check_missing_homomers(completed: List[str], out_dir: Path,
+                          sequences: List[SeqRecord], stoich:int) -> List[SeqRecord]:
+    """
+    Obtain the list of sequences that don't have a model yet
+
+    Args:
+        completed (List): List of ids of the sequences that have features
+        out_dir (Path): Output directory for the models
+        sequences (List[SeqRecord]): Sequences to model
+        stoich (int): Stoichiometry of the homomers
+    Returns:
+        List[SeqRecord]: List of sequences that don't have a model yet
+    """
+    
+    print(f"Checking for existing models in {out_dir}...")
+    # Get the ids of the sequences that have a model already created
+    modeled = []
+    for sid in completed:
+        model_scores = out_dir / f'{sid}-{stoich}' / 'iptms.json'
+        if model_scores.exists():
+            modeled.append(sid)
+
+    print(f'Found {len(modeled)} models for {len(sequences)} candidate sequences.')
+
+    to_model = [s for s in completed if s not in modeled]
+
+    # Get the sequences to model
+    sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
+    
+    return sequences_to_model

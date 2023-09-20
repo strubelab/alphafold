@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+
+"""
+Script to make features for a list of protein sequences
+"""
+
+import argparse
+from Bio import SeqIO
+from pathlib import Path
+from datetime import date
+from alphafold_ibex.alphafold_ibex import AlphafoldIbex
+from alphafold_ibex.utils import (read_sequences, validate_models,
+                                check_existing_features, check_missing_homomers)
+
+from typing import List
+import sys
+
+
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Args:
+        args (list, optional): List of the arguments to be parsed (only to be
+            used for testing). If none is provided, it is taken from sys.argv.
+            Defaults to None.
+
+    Returns:
+        argparse.Namespace
+    """
+
+    def validate_num(num:str):
+        """
+        Validate the number in the arguments for gpu, mem, time and recycles
+
+        Args:
+            num (str): Number provided
+        """
+        if num=='auto':
+            return num
+        
+        return int(num)
+    
+    def validate_date(d:str):
+        """
+        Validate the date format
+
+        Args:
+            d (str): date in YYYY-MM-DD format
+
+        Returns:
+            str: same date if valid
+        """
+        dsplit = d.split('-')
+        if len(dsplit) < 3:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        elif int(dsplit[1]) > 12:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        
+        return d
+    
+    def validate_features_dir(d:str) -> Path:
+        """
+        Validate that the directory with the features exists
+        """
+        d = Path(d)
+        if not d.exists():
+            raise ValueError("The specified features directory doesn't exist.")
+            
+        return d
+    
+
+    parser = argparse.ArgumentParser(description=('Makes homomeric complexes for'
+                ' the proteins given in `input`. The features '
+                'must be pre-calculated and provided in a directory.'))
+
+    parser.add_argument("--input", help=('Fasta file(s) or directory with the '
+        'sequence(s) to model as homomers.'), nargs='+')
+    
+    parser.add_argument("--stoichiometry",
+        help=("Stoichiometry of the individual complexes (i.e. number of copies "
+              "of the monomer) provided as an integer. Default=1"),
+        type=int, default=1)
+    
+    parser.add_argument("--features_dir", 
+        help=('Path with the pre-calculated features.'), required=True,
+        type=validate_features_dir)
+
+    parser.add_argument("--destination", 
+        help=('Path for saving the resulting AlphaFold models. It will create '
+        'one subdirectory for each model. Also will contain the sequence files ' 
+        'as they were submitted to ibex, the script that was submitted and the '
+        'ibex stdout files.'), required=True)
+    
+    parser.add_argument("--time", help=('Time in minutes to give to each job. '
+        '(default=30)'), type=int, default=30)
+
+    parser.add_argument("--mem", help=('Memory in GB to allocate to each job. '
+        '(default="auto")'), type=validate_num, default='auto')
+
+    parser.add_argument("--mail", help=('Email to send notifications about the '
+                'job progess in ibex.'), type=str)
+    
+    parser.add_argument("--max_jobs",
+        help=("Maximum number of jobs to submit simultaneously to ibex. Default=1990"),
+        type=int, default=1990)
+    
+    parser.add_argument("--gpu_type", help=("Whether to use V100 or A100 GPU."
+        " If you don't know what this is, leave the default. (Default=v100)"),
+        default='v100', choices=['v100','a100'])
+    
+    parser.add_argument("--models_to_run",
+        help=("Which of the AlphaFold models to run. Choose 'all' to make all five"
+              " models, 'two' to make only two models with different parameters"
+              ", or give the name(s) of the specific model(s) that you want to "
+              "run separated by spaces. Default = 'two'."), nargs='+')
+    
+    parser.add_argument("--multimer_predictions_per_model", help=('Number of '
+        'multimeric predictions to make for each of the ML models that '
+        'AlphaFold runs.'), type=int, default=1)
+    
+    parser.add_argument("--max_template_date",
+        help=('Maximum template release date to consider. Give value in '
+              'YYYY-MM-DD format.'), type=validate_date,
+        default=date.today().isoformat())
+ 
+    return parser.parse_args(args)
+
+
+if __name__ == '__main__':
+
+    args = parsing()
+    
+    # Read all sequences in every input file or directory and put together in a list
+    sequences = []
+    for f in args.candidates:
+        sequences += read_sequences(f)
+    
+    print(f'Read {len(sequences)} sequences to multimerize.')
+    
+    ######### Check for existing features
+    features_dir = Path(args.features_dir)
+    
+    completed = check_existing_features(features_dir, sequences)
+    
+    ######### Check for existing models in the destination directory
+    
+    out_dir = Path(args.destination)
+    
+    if out_dir.exists():
+        sequences_to_model = check_missing_homomers(completed, out_dir,
+                                                  sequences, args.stoichiometry)
+    else:
+        out_dir.mkdir()
+        sequences_to_model = sequences
+        
+    # Make complexes
+    complexes = [[s]*args.stoichiometry for s in sequences_to_model]
+    print(f'{len(complexes)} complexes to model.')
+    
+    ###### Get the rest of the parameters
+    model_names = validate_models(args.models_to_run)
+
+    # Save command to output dir
+    with open(out_dir/'command.txt', 'w') as f:
+        f.write(' '.join(sys.argv))
+        f.write('\n')
+    
+    # Run AlphaFold
+    print('Running AlphaFold to calculate complexes...')
+    exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
+                    models_to_relax='none',
+                    multimer_predictions_per_model=args.multimer_predictions_per_model,
+                    gpu_type=args.gpu_type,
+                    screen_mode=True,
+                    features_dir=features_dir,
+                    mail=args.mail,
+                    time_per_command=args.time,
+                    mem=args.mem,
+                    model_names=model_names)
+
+    exe.run()
