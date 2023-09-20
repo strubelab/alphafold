@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import List
 from Bio.SeqRecord import SeqRecord
 
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
 ######## PROCESS SEQUENCE INPUTS ########
 
 def define_homooligomers(sequences:list):
@@ -122,7 +125,7 @@ def get_id(seqid:str) -> str:
 
 def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
     
-    print(f'Checking for existing features in {out_dir}...')
+    logging.info(f'Checking for existing features in {out_dir}...')
     
     all_ids = [get_id(s[0].id) for s in sequences]
     # all_ids = [s[0].id.split('|')[1] for s in sequences]
@@ -134,7 +137,7 @@ def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
         if features_file.exists():
             completed.append(sid)
     
-    print(f'Found {len(completed)} sequences with features already calculated.')
+    logging.info(f'Found {len(completed)} sequences with features already calculated.')
 
     # Get the sequences that don't have features created yet
     missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
@@ -184,7 +187,7 @@ def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
                    features
     """
     
-    print(f'Checking for existing features in {features_dir}...')
+    logging.info(f'Checking for existing features in {features_dir}...')
     
     if bait:
         # Features file for bait
@@ -204,7 +207,7 @@ def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
         if features_file.exists():
             completed.append(sid)
     
-    print(f'Found {len(completed)} features for {len(sequences)} candidate sequences.')
+    logging.info(f'Found {len(completed)} features for {len(sequences)} candidate sequences.')
     
     return completed
 
@@ -224,7 +227,7 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
         List[SeqRecord]: List of candidate sequences that don't have a model yet
     """
     
-    print(f"Checking for existing models in {out_dir}...")
+    logging.info(f"Checking for existing models in {out_dir}...")
     bait_id = get_id(bait.id)
     # Get the ids of the sequences that have a model already created
     modeled = []
@@ -233,7 +236,7 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
         if model_scores.exists():
             modeled.append(sid)
 
-    print(f'Found {len(modeled)} models for {len(sequences)} candidate sequences.')
+    logging.info(f'Found {len(modeled)} models for {len(sequences)} candidate sequences.')
 
     to_model = [s for s in completed if s not in modeled]
 
@@ -256,7 +259,7 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
         List[SeqRecord]: List of sequences that don't have a model yet
     """
     
-    print(f"Checking for existing models in {out_dir}...")
+    logging.info(f"Checking for existing models in {out_dir}...")
     # Get the ids of the sequences that have a model already created
     modeled = []
     for sid in completed:
@@ -264,7 +267,7 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
         if model_scores.exists():
             modeled.append(sid)
 
-    print(f'Found {len(modeled)} models for {len(sequences)} candidate sequences.')
+    logging.info(f'Found {len(modeled)} models for {len(sequences)} candidate sequences.')
 
     to_model = [s for s in completed if s not in modeled]
 
