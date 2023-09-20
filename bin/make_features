@@ -36,11 +36,30 @@ def read_sequences(input:str) -> list:
     
     return sequences
 
+def get_id(seqid:str) -> str:
+    """
+    Process and return the id of the sequence
+
+    Args:
+        seqid (str): full id of the sequence
+
+    Returns:
+        str: processed id
+    """
+    names = seqid.split('|')
+    
+    if len(names) > 1:
+        return names[1]
+    else:
+        return names[0]
+    
+
 def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
     
     print(f'Checking for existing features in {out_dir}...')
-        
-    all_ids = [s[0].id.split('|')[1] for s in sequences]
+    
+    all_ids = [get_id(s[0].id) for s in sequences]
+    # all_ids = [s[0].id.split('|')[1] for s in sequences]
 
     # Get the ids of the sequences that have a `features.pkl` file
     completed = []

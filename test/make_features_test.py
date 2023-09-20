@@ -1,9 +1,7 @@
 import unittest
 
-import os, sys, shutil
-import tempfile
+import os, sys
 from pathlib import Path
-import pickle
 
 from Bio import SeqIO
 
