@@ -5,9 +5,9 @@ from pathlib import Path
 
 from Bio import SeqIO
 
-sys.path.append(os.fspath(Path(__file__).parent.parent / 'bin'))
+sys.path.append(os.fspath(Path(__file__).parent.parent))
 
-from make_features import check_missing_sequences
+from alphafold_ibex.utils import check_missing_sequences
 
 class CheckMissingSequencesTest(unittest.TestCase):
     """

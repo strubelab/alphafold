@@ -5,9 +5,10 @@ from pathlib import Path
 
 from Bio import SeqIO
 
-sys.path.append(os.fspath(Path(__file__).parent.parent / 'bin'))
+sys.path.append(os.fspath(Path(__file__).parent.parent))
 
-from make_complexes import validate_models, check_existing_features, check_missing_models
+from alphafold_ibex.utils import (validate_models, check_existing_features,
+                                  check_missing_models)
 
 class ValidateModelsTest(unittest.TestCase):
     """

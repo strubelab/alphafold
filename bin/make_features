@@ -9,72 +9,9 @@ from Bio import SeqIO
 from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
+from alphafold_ibex.utils import read_sequences, check_missing_sequences
+                                  
 import sys
-from typing import List
-from Bio.SeqRecord import SeqRecord
-
-
-def read_sequences(input:str) -> list:
-    """
-    Get an input of either a fasta file or a directory and read all the sequences
-    in it
-    """
-    
-    input = Path(input)
-    
-    if not input.exists():
-        raise ValueError('Input file or directory does not exist.')
-    
-    if input.is_file():
-        sequences = list(SeqIO.parse(input, 'fasta'))
-    elif input.is_dir():
-        sequences = []
-        for f in input.glob('*.fasta'):
-            sequences += list(SeqIO.parse(f, 'fasta'))
-    else:
-        raise ValueError('Input must be either a fasta file or a directory with fasta files.')
-    
-    return sequences
-
-def get_id(seqid:str) -> str:
-    """
-    Process and return the id of the sequence
-
-    Args:
-        seqid (str): full id of the sequence
-
-    Returns:
-        str: processed id
-    """
-    names = seqid.split('|')
-    
-    if len(names) > 1:
-        return names[1]
-    else:
-        return names[0]
-    
-
-def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
-    
-    print(f'Checking for existing features in {out_dir}...')
-    
-    all_ids = [get_id(s[0].id) for s in sequences]
-    # all_ids = [s[0].id.split('|')[1] for s in sequences]
-
-    # Get the ids of the sequences that have a `features.pkl` file
-    completed = []
-    for sid in all_ids:
-        features_file = out_dir / sid / 'features.pkl'
-        if features_file.exists():
-            completed.append(sid)
-    
-    print(f'Found {len(completed)} sequences with features already calculated.')
-
-    # Get the sequences that don't have features created yet
-    missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
-    
-    return missing_sequences
-
 
 def parsing(args: list=None) -> argparse.Namespace:
     """
