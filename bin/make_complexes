@@ -219,10 +219,22 @@ def parsing(args: list=None) -> argparse.Namespace:
         
         return f
     
+    def validate_stoichiomemtry(s:str) -> List[int]:
+        """
+        Validate the stoichiometry provided
+        """
+        if ':' not in s:
+            raise ValueError('Stoichiometry must be provided as bait:candidate.')
+        
+        homomers = [int(n) for n in s.split(':')]
+        
+        return homomers
+    
 
-    parser = argparse.ArgumentParser(description=('Takes one or more FASTA '
-        'files with amino acid sequences, and submits a '
-        'job array to ibex to make features for each sequence.'))
+    parser = argparse.ArgumentParser(description=('Makes complex models in a '
+                'ONE TO MANY fashion using AlphaFold. It will make complexes of'
+                'one bait protein with many candidate proteins. The features '
+                'must be pre-calculated and provided in a directory.'))
     
     parser.add_argument("--bait",
         help=("FASTA file with the sequence of the bait protein. This file must"
@@ -231,6 +243,11 @@ def parsing(args: list=None) -> argparse.Namespace:
 
     parser.add_argument("--candidates", help=('Fasta file(s) with the sequence(s) '
         'to model as multimers againts the bait protein.'), nargs='+')
+    
+    parser.add_argument("--stoichiometry",
+        help=("Stoichiometry of the individual complexes provided as an integer"
+              " pair in the form of bait:candidate. Default=1:1"),
+        type=validate_stoichiomemtry, default=[1, 1])
     
     parser.add_argument("--features_dir", 
         help=('Path with the pre-calculated features.'), required=True,
@@ -313,7 +330,9 @@ if __name__ == '__main__':
         sequences_to_model = sequences
         
     # Make complexes
-    complexes = [[bait, s] for s in sequences_to_model]
+    nbait = args.stoichiometry[0]
+    ncandidate = args.stoichiometry[1]
+    complexes = [[bait]*nbait + [s]*ncandidate for s in sequences_to_model]
     print(f'{len(complexes)} complexes to model.')
     
     ###### Get the rest of the parameters
