@@ -5,15 +5,15 @@ Script to make features for a list of protein sequences
 """
 
 import argparse
-from Bio import SeqIO
 from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 from alphafold_ibex.utils import (read_sequences, validate_models,
                                 check_existing_features, check_missing_homomers)
-
-from typing import List
 import sys
+
+import logging
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def parsing(args: list=None) -> argparse.Namespace:
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     for f in args.input:
         sequences += read_sequences(f)
     
-    print(f'Read {len(sequences)} sequences to multimerize.')
+    logging.info(f'Read {len(sequences)} sequences to multimerize.')
     
     ######### Check for existing features
     features_dir = Path(args.features_dir)
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         
     # Make complexes
     complexes = [[s]*args.stoichiometry for s in sequences_to_model]
-    print(f'{len(complexes)} complexes to model.')
+    logging.info(f'{len(complexes)} complexes to model.')
     
     ###### Get the rest of the parameters
     model_names = validate_models(args.models_to_run)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
         f.write('\n')
     
     # Run AlphaFold
-    print('Running AlphaFold to calculate complexes...')
+    logging.info('Running AlphaFoldIbex...')
     exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
                     models_to_relax=args.models_to_relax,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
