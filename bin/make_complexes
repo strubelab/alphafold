@@ -156,6 +156,13 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Maximum template release date to consider. Give value in '
               'YYYY-MM-DD format.'), type=validate_date,
         default=date.today().isoformat())
+    
+    parser.add_argument("--models_to_relax", help=("The models to run the "
+                        "final relaxation step on. If `all`, all models are "
+                        "relaxed, which may be time consuming. If `best`, only "
+                        "the most confident model is relaxed. If `none`, "
+                        "relaxation is not run. Defaults to `best`."),
+                        default='best', choices=['all','best','none'])
  
     return parser.parse_args(args)
 
@@ -206,7 +213,7 @@ if __name__ == '__main__':
     # Run AlphaFold
     print('Running AlphaFold to calculate complexes...')
     exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
-                    models_to_relax='none',
+                    models_to_relax=args.models_to_relax,
                     multimer_predictions_per_model=args.multimer_predictions_per_model,
                     gpu_type=args.gpu_type,
                     screen_mode=args.screen_mode,
