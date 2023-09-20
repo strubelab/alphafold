@@ -103,7 +103,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=validate_bait, required=True)
 
     parser.add_argument("--candidates", help=('Fasta file(s) with the sequence(s) '
-        'to model as multimers againts the bait protein.'), nargs='+')
+        'to model as multimers against the bait protein.'), nargs='+')
     
     parser.add_argument("--stoichiometry",
         help=("Stoichiometry of the individual complexes provided as an integer"
@@ -147,12 +147,6 @@ def parsing(args: list=None) -> argparse.Namespace:
         'multimeric predictions to make for each of the ML models that '
         'AlphaFold runs.'), type=int, default=1)
     
-    parser.add_argument("--old_uniclust",
-        help=("If hhblits is causing an error along the lines of `ERROR: did "
-              "not find ### match states in sequence 1 of ##########`, try "
-              "using the older version of the UniClust database (UniRef30_2021_03) "
-              "to calculate the MSAs with HHblits."), action='store_true')
-    
     parser.add_argument("--max_template_date",
         help=('Maximum template release date to consider. Give value in '
               'YYYY-MM-DD format.'), type=validate_date,
@@ -177,7 +171,7 @@ if __name__ == '__main__':
     ######### Check for existing features
     features_dir = Path(args.features_dir)
     
-    completed = check_existing_features(features_dir, bait, sequences)
+    completed = check_existing_features(features_dir, sequences, bait)
     
     ######### Check for existing models in the destination directory
     

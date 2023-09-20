@@ -64,8 +64,8 @@ class CheckExistingFeaturesTest(unittest.TestCase):
         """
         bait = SeqIO.read(self.sequences_dir / 'bait.fasta', 'fasta')
         
-        existing_features = check_existing_features(self.features_dir, bait,
-                                                   self.sequences)
+        existing_features = check_existing_features(self.features_dir,
+                                                    self.sequences, bait)
         
         self.assertEqual(len(existing_features), 7)
         
@@ -81,7 +81,22 @@ class CheckExistingFeaturesTest(unittest.TestCase):
         bait = SeqIO.read(self.sequences_dir / 'bait2.fasta', 'fasta')
         
         self.assertRaises(ValueError, check_existing_features, self.features_dir,
-                          bait, self.sequences)
+                          self.sequences, bait)
+    
+    def test_existing_features_baitnull(self) -> None:
+        """
+        Test that the correct number of features is identified, no bait provided
+        """
+        
+        existing_features = check_existing_features(self.features_dir,
+                                                    self.sequences)
+        
+        self.assertEqual(len(existing_features), 7)
+        
+        test_existing = ['A0A0N7KDK5', 'A0A0N7KED1', 'A0A0N7KHT0', 'A0A0N7KJD4',
+                        'A0A0N7KJF0', 'A0A0N7KKX8', 'A0A0N7KPF2']
+        
+        self.assertEqual(existing_features, test_existing)
 
 
 class CheckMissingModels(unittest.TestCase):
@@ -95,7 +110,7 @@ class CheckMissingModels(unittest.TestCase):
         sequences = list(SeqIO.parse(sequences_dir / 'test_rice.fasta', 'fasta'))
         bait = SeqIO.read(sequences_dir / 'bait.fasta', 'fasta')
         
-        completed = check_existing_features(features_dir, bait, sequences)
+        completed = check_existing_features(features_dir, sequences, bait)
         
         sequences_to_model = check_missing_models(completed, features_dir, bait,
                                                   sequences)

@@ -166,8 +166,8 @@ def validate_models(models:list) -> list:
         
         return models
 
-def check_existing_features(features_dir: Path, bait: SeqRecord,
-                            sequences: List[SeqRecord]) -> List[str]:
+def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
+                            bait: SeqRecord=None) -> List[str]:
     """
     Check if the features for the bait and the candidates already exist
 
@@ -186,11 +186,12 @@ def check_existing_features(features_dir: Path, bait: SeqRecord,
     
     print(f'Checking for existing features in {features_dir}...')
     
-    # Features file for bait
-    bait_id = get_id(bait.id)
-    bait_features_file = features_dir / bait_id / 'features.pkl'
-    if not bait_features_file.exists():
-        raise ValueError(f'Features for bait {bait.id} not found in {features_dir}.')
+    if bait:
+        # Features file for bait
+        bait_id = get_id(bait.id)
+        bait_features_file = features_dir / bait_id / 'features.pkl'
+        if not bait_features_file.exists():
+            raise ValueError(f'Features for bait {bait.id} not found in {features_dir}.')
     
     # Features files for candidates
     # all_ids = [s.id.split('|')[1] for s in sequences]
