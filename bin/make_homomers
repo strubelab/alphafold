@@ -146,7 +146,7 @@ if __name__ == '__main__':
     
     # Read all sequences in every input file or directory and put together in a list
     sequences = []
-    for f in args.candidates:
+    for f in args.input:
         sequences += read_sequences(f)
     
     print(f'Read {len(sequences)} sequences to multimerize.')
