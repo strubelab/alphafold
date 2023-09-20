@@ -13,7 +13,7 @@ from alphafold_ibex.utils import (read_sequences, validate_models,
 import sys
 
 import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.getLogger().setLevel(logging.INFO)
 
 
 def parsing(args: list=None) -> argparse.Namespace:
