@@ -2,11 +2,14 @@ import pickle
 import re
 import jax
 import numpy as np
-
+import pandas as pd
+import json
 from Bio import SeqIO
 from pathlib import Path
 from typing import List
 from Bio.SeqRecord import SeqRecord
+
+from typing import Dict
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -275,3 +278,73 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
     sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
     
     return sequences_to_model
+
+
+######## Find random seeds
+
+def get_scores(models_dir:Path) -> pd.DataFrame:
+    
+    dirs = list(models_dir.iterdir())
+    
+    dfs = []
+    for d in dirs:
+        ranking_file = d / "ranking_debug.json"
+        if ranking_file.exists():
+            with open(d / "ranking_debug.json") as f:
+                iptm_ptms = json.load(f)['iptm+ptm']
+            with open(d / "iptms.json") as f:
+                iptms = json.load(f)['iptms']
+            df = pd.DataFrame.from_dict(iptm_ptms, orient="index",
+                                        columns=["iptm+ptm"])
+            df["iptms"] = iptms
+            df["complex"] = d.name
+            # Reset the index
+            df = df.reset_index(names="model")
+            dfs.append(df)
+    
+    logging.info(f"Found {len(dfs)} model directories with quality scores.")
+
+    # Concatenate all the DataFrames into one
+    scores = pd.concat(dfs, ignore_index=True)
+
+    scores = scores.sort_values(by=['complex','iptms'], ignore_index=True,
+                            ascending=[True, False])
+
+    return scores
+
+
+def get_seeds(top_complexes: List[str], top_ligands: List[str],
+              models_dir:Path) -> Dict[str, int]:
+    """
+    Read the random seeds from the stdout files of the given models
+
+    Args:
+        top_complexes (List[str]): Names of top complexes
+        top_ligands (List[str]): Names of the top ligands
+        models_dir (Path): Directory with the models and the `out_ibe` directory
+
+    Returns:
+        Dict[str, int]: Dictionary with {ligand: seed} pairs
+    """
+    # Find the files in which each top ligand is run, and get the random seed
+    out_files = list((models_dir / 'out_ibex').glob('*.out'))
+    seeds = {}
+    for i, complex in enumerate(top_complexes):
+        for fout in out_files:
+            with open(fout, 'r') as f:
+                for line in f:
+                    if re.search(r'Using random seed', line):
+                        seed = int(re.search(r'Using random seed (\d+) for the',
+                                             line).group(1))
+                        
+                        # The name of the complex has to be in the next line
+                        next_line = next(f)
+                        if complex in next_line:
+                            seeds[top_ligands[i]] = seed
+                            break
+            
+            # Check if the seed has been found
+            if top_ligands[i] in seeds:
+                break
+    
+    return seeds

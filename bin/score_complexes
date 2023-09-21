@@ -1,0 +1,157 @@
+# For every directory starting with  in the current directory:
+# 1. Read the `ranking_debug.json` file and get the value of "iptm+ptm"
+# 2. Read the `iptms.json` file and get the value of "iptms"
+# 3. Make a DataFrame with the index being the model name and the columns being
+# the values of "iptm+ptm" and "iptms"
+# 4. Add a column with the name of the directory
+# 5. Reset the index
+# 6. At the end, concatenate all the DataFrames into one
+
+import re
+from pathlib import Path
+import pandas as pd
+import argparse
+from alphafold_ibex.utils import get_seeds, get_scores
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pickle
+from Bio import SeqIO
+
+sns.set_theme(context='talk', style='whitegrid')
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
+
+def plot_iptms(highest_scores:pd.DataFrame, out_dir:Path,
+               iptm_threshold:float=0.75):
+    
+    fig, ax = plt.subplots(figsize=(5,5), dpi=150)
+
+    g = sns.boxplot(data=highest_scores, y='iptms', ax=ax)
+
+    plt.suptitle('dn47 vs rice proteome')
+
+    g.set_xlabel('ipTM score')
+
+    # Draw a horizontal red line in x=0.75
+    plt.axhline(y=iptm_threshold, color='red', linestyle='--')
+
+    # fig.tight_layout()
+    plt.savefig(out_dir/'iptms.png', bbox_inches='tight')
+    plt.show()
+
+
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Args:
+        args (list, optional): List of the arguments to be parsed (only to be
+            used for testing). If none is provided, it is taken from sys.argv.
+            Defaults to None.
+
+    Returns:
+        argparse.Namespace
+    """
+
+    
+    def validate_dir(d:str) -> Path:
+        """
+        Validate that the directory with the features exists
+        """
+        d = Path(d)
+        if not d.exists():
+            raise ValueError("The specified directory doesn't exist.")
+            
+        return d
+
+    def validate_out(d:str) -> Path:
+        d = Path(d)
+        if not d.exists():
+            d.mkdir()
+        return d
+
+    def validate_iptm(n:str) -> float:
+        """
+        Validate that the provided iptm number is between 0 and 1
+        """
+
+        n = float(n)
+        if n < 0 or n > 1:
+            raise ValueError("The iptm threshold must be between 0 and 1.")
+        return n
+
+    parser = argparse.ArgumentParser(description=('Reads all the quality scores'
+                'for the models in the given directory and ranks them. Outputs '
+                'are a table with the quality scores, a fasta file with the '
+                'best sequences and a text file with the random seeds for '
+                'making the complexes again.'))
+
+    parser.add_argument("--models_dir", 
+        help=('Path where the quality scores of the models are saved.'),
+        type=validate_dir, required=True)
+    
+    parser.add_argument("--out_dir",
+        help=('Path where the outputs will be saved. Defaults to a `scores` '
+              'director inside of `models_dir`.'), type=validate_out,
+        default=None)
+    
+    parser.add_argument("--iptm_threshold",
+        help=('Threshold for the iPTM score to select the best models '
+              '(between 0 and 1). The candidate sequences for the models with '
+              'a score above this number will be given in the outputs, along '
+              'with their random seeds.'),
+        type=validate_iptm, default=0.75)
+ 
+    return parser.parse_args(args)
+
+
+
+if __name__ == '__main__':
+
+    args = parsing()
+    
+    if args.out_dir is None:
+        out_dir = args.models_dir / "scores"
+    else:
+        out_dir = args.out_dir
+        
+    # Read all the scores
+    scores = get_scores(args.models_dir)
+    
+    # Group by `complex`, and get the `model` with highest `iptms` score
+    highest_indexes_iptm = scores.groupby("complex")['iptms'].idxmax()
+
+    highest_scores = (scores.iloc[highest_indexes_iptm]
+                    .sort_values(by='iptms', ascending=False)
+                    .reset_index(drop=True))
+    
+    # Make plot
+    plot_iptms(highest_scores, out_dir, iptm_threshold=args.iptm_threshold)
+    
+    # Select top ligands
+    select = highest_scores.iptms >= args.iptm_threshold
+    top_complexes = list(highest_scores[select].complex)
+    top_ligands = list(highest_scores[select].complex.apply(
+                   lambda x: re.search(r'_(\w+)-1$', x).group(1)))
+    seeds = get_seeds(top_complexes, top_ligands, args.models_dir)
+    
+    # Retrieve the top candidates
+    top_candidate_sequences = []
+    for c in top_complexes:
+        candidate_sequence = list(SeqIO.parse(args.models_dir / c / f'{c}.fasta',
+                                              'fasta'))[1]
+        top_candidate_sequences.append(candidate_sequence)
+    
+    # Save the top candidates
+    SeqIO.write(top_candidate_sequences, out_dir / 'top_candidates.fasta',
+                'fasta')
+    
+    # Save the seeds
+    with open(out_dir / 'seeds.pkl', 'wb') as f:
+        pickle.dump(seeds, f)
+    
+    # Save the scores as csv
+    highest_scores.to_csv(out_dir / 'scores.csv', index=False)

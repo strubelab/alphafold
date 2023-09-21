@@ -1,0 +1,10 @@
+{
+    "iptms": {
+        "model_3_multimer_v3_pred_0": 0.14406830072402954,
+        "model_4_multimer_v3_pred_0": 0.22912366688251495
+    },
+    "order": [
+        "model_4_multimer_v3_pred_0",
+        "model_3_multimer_v3_pred_0"
+    ]
+}

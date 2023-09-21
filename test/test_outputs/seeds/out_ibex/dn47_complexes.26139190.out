@@ -1,0 +1,75 @@
+Loading module for CUDA 11.2.2
+CUDA 11.2.2 is now loaded
+Loading module for Alphafold
+Alphafold 2.3.1 is now loaded
+
+Please execute the Python3 script as:
+     python3 $AlphaFold/run_alphafold.py --helpfull 
+    All reference data avaialble at $ALPHAFOLD_DATA_DIR
+
+/ibex/project/c2217/alphafold_strube/env/bin/python /ibex/project/c2217/alphafold_strube/alphafold_ibex/run_wrapper.py /ibex/project/c2217/alphafold_strube/runs/denovo_screen/dn47_complexes/sequences/sequences0.pkl none runs/denovo_screen/dn47_complexes 6 1 False a100 False 2023-06-17 None runs/denovo_screen/all_features False model_3_multimer_v3,model_4_multimer_v3 True True False
+INFO:root:Running AlphaFold for target Osjap04g06970.1-1_Q69XP7-1...
+INFO:root:Running command:
+INFO:root:Command was run successfully.
+INFO:root:stdout:
+I0617 22:41:09.639808 46919842119360 templates.py:857] Using precomputed obsolete pdbs /ibex/ai/reference/KSL/alphafold/2.3.1/pdb_mmcif/obsolete.dat.
+I0617 22:41:09.961840 46919842119360 xla_bridge.py:353] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I0617 22:41:10.170789 46919842119360 xla_bridge.py:353] Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: Interpreter CUDA Host
+I0617 22:41:10.171145 46919842119360 xla_bridge.py:353] Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+I0617 22:41:10.171214 46919842119360 xla_bridge.py:353] Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+I0617 22:41:11.356628 46919842119360 run_alphafold.py:509] Have 2 models: ['model_3_multimer_v3_pred_0', 'model_4_multimer_v3_pred_0']
+I0617 22:41:11.356793 46919842119360 run_alphafold.py:523] Using random seed 3890259107591565217 for the data pipeline
+I0617 22:41:11.357026 46919842119360 run_alphafold.py:215] Predicting Osjap04g06970.1-1_Q69XP7-1
+I0617 22:41:13.349412 46919842119360 run_alphafold.py:256] Running model model_3_multimer_v3_pred_0 on Osjap04g06970.1-1_Q69XP7-1
+INFO:root:Running AlphaFold for target Osjap04g06970.1-1_Q8LNT5-1...
+INFO:root:Running command:
+INFO:root:Command was run successfully.
+INFO:root:stdout:
+I0617 23:11:54.192097 46913599471296 templates.py:857] Using precomputed obsolete pdbs /ibex/ai/reference/KSL/alphafold/2.3.1/pdb_mmcif/obsolete.dat.
+I0617 23:11:54.486890 46913599471296 xla_bridge.py:353] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I0617 23:11:54.703552 46913599471296 xla_bridge.py:353] Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: Interpreter CUDA Host
+I0617 23:11:54.703840 46913599471296 xla_bridge.py:353] Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+I0617 23:11:54.703924 46913599471296 xla_bridge.py:353] Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+I0617 23:11:55.828822 46913599471296 run_alphafold.py:509] Have 2 models: ['model_3_multimer_v3_pred_0', 'model_4_multimer_v3_pred_0']
+I0617 23:11:55.828978 46913599471296 run_alphafold.py:523] Using random seed 183306296791308092 for the data pipeline
+I0617 23:11:55.829174 46913599471296 run_alphafold.py:215] Predicting Osjap04g06970.1-1_Q8LNT5-1
+I0617 23:11:56.976963 46913599471296 run_alphafold.py:256] Running model model_3_multimer_v3_pred_0 on Osjap04g06970.1-1_Q8LNT5-1
+INFO:root:Running AlphaFold for target Osjap04g06970.1-1_Q8S1M1-1...
+INFO:root:Running command:
+INFO:root:Command was run successfully.
+INFO:root:stdout:
+I0617 23:27:40.223303 47030613987008 templates.py:857] Using precomputed obsolete pdbs /ibex/ai/reference/KSL/alphafold/2.3.1/pdb_mmcif/obsolete.dat.
+I0617 23:27:40.520648 47030613987008 xla_bridge.py:353] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I0617 23:27:40.733458 47030613987008 xla_bridge.py:353] Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: Interpreter Host CUDA
+I0617 23:27:40.733800 47030613987008 xla_bridge.py:353] Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+I0617 23:27:40.733864 47030613987008 xla_bridge.py:353] Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+I0617 23:27:41.938660 47030613987008 run_alphafold.py:509] Have 2 models: ['model_3_multimer_v3_pred_0', 'model_4_multimer_v3_pred_0']
+I0617 23:27:41.938827 47030613987008 run_alphafold.py:523] Using random seed 4434093285290138516 for the data pipeline
+I0617 23:27:41.939065 47030613987008 run_alphafold.py:215] Predicting Osjap04g06970.1-1_Q8S1M1-1
+I0617 23:27:42.125654 47030613987008 run_alphafold.py:256] Running model model_3_multimer_v3_pred_0 on Osjap04g06970.1-1_Q8S1M1-1
+INFO:root:Running AlphaFold for target Osjap04g06970.1-1_Q53LS6-1...
+INFO:root:Running command:
+INFO:root:Command was run successfully.
+INFO:root:stdout:
+I0617 23:32:01.050202 47692318912192 templates.py:857] Using precomputed obsolete pdbs /ibex/ai/reference/KSL/alphafold/2.3.1/pdb_mmcif/obsolete.dat.
+I0617 23:32:01.261391 47692318912192 xla_bridge.py:353] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I0617 23:32:01.474268 47692318912192 xla_bridge.py:353] Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: CUDA Host Interpreter
+I0617 23:32:01.474545 47692318912192 xla_bridge.py:353] Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+I0617 23:32:01.474624 47692318912192 xla_bridge.py:353] Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+I0617 23:32:02.508060 47692318912192 run_alphafold.py:509] Have 2 models: ['model_3_multimer_v3_pred_0', 'model_4_multimer_v3_pred_0']
+I0617 23:32:02.508200 47692318912192 run_alphafold.py:523] Using random seed 142547612931678479 for the data pipeline
+I0617 23:32:02.508390 47692318912192 run_alphafold.py:215] Predicting Osjap04g06970.1-1_Q53LS6-1
+I0617 23:32:03.059034 47692318912192 run_alphafold.py:256] Running model model_3_multimer_v3_pred_0 on Osjap04g06970.1-1_Q53LS6-1
+INFO:root:Running AlphaFold for target Osjap04g06970.1-1_Q5JNJ6-1...
+INFO:root:Running command:
+INFO:root:Command was run successfully.
+INFO:root:stdout:
+I0617 23:37:01.913532 47787259358912 templates.py:857] Using precomputed obsolete pdbs /ibex/ai/reference/KSL/alphafold/2.3.1/pdb_mmcif/obsolete.dat.
+I0617 23:37:02.113104 47787259358912 xla_bridge.py:353] Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+I0617 23:37:02.323601 47787259358912 xla_bridge.py:353] Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: Interpreter Host CUDA
+I0617 23:37:02.323925 47787259358912 xla_bridge.py:353] Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+I0617 23:37:02.324018 47787259358912 xla_bridge.py:353] Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+I0617 23:37:03.347664 47787259358912 run_alphafold.py:509] Have 2 models: ['model_3_multimer_v3_pred_0', 'model_4_multimer_v3_pred_0']
+I0617 23:37:03.347804 47787259358912 run_alphafold.py:523] Using random seed 1217509057474844807 for the data pipeline
+I0617 23:37:03.348008 47787259358912 run_alphafold.py:215] Predicting Osjap04g06970.1-1_Q5JNJ6-1
+I0617 23:37:04.062754 47787259358912 run_alphafold.py:256] Running model model_3_multimer_v3_pred_0 on Osjap04g06970.1-1_Q5JNJ6-1
