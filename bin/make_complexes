@@ -8,13 +8,16 @@ import argparse
 from Bio import SeqIO
 from pathlib import Path
 from datetime import date
+import pickle
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
-from alphafold_ibex.utils import (read_sequences, validate_models,
+from alphafold_ibex.utils import (read_sequences, validate_models, get_id,
                                 check_existing_features, check_missing_models)
 
 from typing import List
 import sys
 
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 def parsing(args: list=None) -> argparse.Namespace:
     """
@@ -77,6 +80,16 @@ def parsing(args: list=None) -> argparse.Namespace:
         f = Path(f)
         if not f.exists():
             raise ValueError("The specified bait file doesn't exist.")
+        
+        return f
+
+    def validate_seed(f:str) -> Path:
+        """
+        Validate that the seed file exists
+        """
+        f = Path(f)
+        if not f.exists():
+            raise ValueError("The specified seed file doesn't exist.")
         
         return f
     
@@ -163,6 +176,14 @@ def parsing(args: list=None) -> argparse.Namespace:
                         "the most confident model is relaxed. If `none`, "
                         "relaxation is not run. Defaults to `best`."),
                         default='best', choices=['all','best','none'])
+    
+    parser.add_argument("--jobname",
+        help=("Name of the job to submit to ibex. Defaults to 'AF_complexes'."),
+        default='AF_complexes')
+    
+    parser.add_argument("--seeds",
+        help=("Path to a .pkl file with the random seeds to use for the complexes."),
+        default=None, type=validate_seed)
  
     return parser.parse_args(args)
 
@@ -181,26 +202,45 @@ if __name__ == '__main__':
     print(f'Read {len(sequences)} candidate sequences to multimerize with bait.')
     
     ######### Check for existing features
+    
+    logging.info(f'Checking for existing features in {args.features_dir}...')
+    
     features_dir = Path(args.features_dir)
     
     completed = check_existing_features(features_dir, sequences, bait)
+    
+    logging.info(f'Found {len(completed)} features for {len(sequences)} '
+                 'candidate sequences.')
     
     ######### Check for existing models in the destination directory
     
     out_dir = Path(args.destination)
     
     if out_dir.exists():
+        logging.info(f"Checking for existing models in {out_dir}...")
         sequences_to_model = check_missing_models(completed, out_dir, bait,
                                                   sequences)
     else:
         out_dir.mkdir()
         sequences_to_model = sequences
+    
+    # Get random seeds if given
+    if args.seeds is not None:
+        logging.info("Reading random seeds...")
+        with open(args.seeds, 'rb') as f:
+            seeds = pickle.load(f)
+        
+        ids_to_model = [get_id(s) for s in sequences_to_model]
+        seeds = [seeds[i] for i in ids_to_model]
+    else:
+        seeds = None
+        
         
     # Make complexes
     nbait = args.stoichiometry[0]
     ncandidate = args.stoichiometry[1]
     complexes = [[bait]*nbait + [s]*ncandidate for s in sequences_to_model]
-    print(f'{len(complexes)} complexes to model.')
+    logging.info(f'{len(complexes)} complexes to model.')
     
     ###### Get the rest of the parameters
     model_names = validate_models(args.models_to_run)
@@ -212,15 +252,16 @@ if __name__ == '__main__':
     
     # Run AlphaFold
     print('Running AlphaFold to calculate complexes...')
-    exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
-                    models_to_relax=args.models_to_relax,
-                    multimer_predictions_per_model=args.multimer_predictions_per_model,
-                    gpu_type=args.gpu_type,
-                    screen_mode=args.screen_mode,
-                    features_dir=features_dir,
-                    mail=args.mail,
-                    time_per_command=args.time,
-                    mem=args.mem,
-                    model_names=model_names)
+    exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname=args.jobname,
+                models_to_relax=args.models_to_relax,
+                multimer_predictions_per_model=args.multimer_predictions_per_model,
+                gpu_type=args.gpu_type,
+                screen_mode=args.screen_mode,
+                features_dir=features_dir,
+                mail=args.mail,
+                time_per_command=args.time,
+                mem=args.mem,
+                model_names=model_names,
+                random_seeds=seeds)
 
     exe.run()

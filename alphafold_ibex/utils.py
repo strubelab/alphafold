@@ -190,8 +190,6 @@ def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
                    features
     """
     
-    logging.info(f'Checking for existing features in {features_dir}...')
-    
     if bait:
         # Features file for bait
         bait_id = get_id(bait.id)
@@ -210,8 +208,6 @@ def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
         if features_file.exists():
             completed.append(sid)
     
-    logging.info(f'Found {len(completed)} features for {len(sequences)} candidate sequences.')
-    
     return completed
 
 
@@ -229,8 +225,7 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
     Returns:
         List[SeqRecord]: List of candidate sequences that don't have a model yet
     """
-    
-    logging.info(f"Checking for existing models in {out_dir}...")
+
     bait_id = get_id(bait.id)
     # Get the ids of the sequences that have a model already created
     modeled = []
@@ -247,6 +242,7 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
     sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
     
     return sequences_to_model
+
 
 def check_missing_homomers(completed: List[str], out_dir: Path,
                           sequences: List[SeqRecord], stoich:int) -> List[SeqRecord]:
