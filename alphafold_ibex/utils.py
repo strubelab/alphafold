@@ -1,8 +1,8 @@
 import pickle
 import re
+import pandas as pd
 import jax
 import numpy as np
-import pandas as pd
 import json
 from Bio import SeqIO
 from pathlib import Path
