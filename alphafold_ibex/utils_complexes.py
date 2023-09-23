@@ -84,7 +84,7 @@ def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]
     logging.info(f'Found {len(completed)} sequences with features already calculated.')
 
     # Get the sequences that don't have features created yet
-    missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
+    missing_sequences = [s for s in sequences if get_id(s[0].id) not in completed]
     
     return missing_sequences, missing_ids
 
