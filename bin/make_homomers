@@ -9,7 +9,8 @@ from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 from alphafold_ibex.utils_complexes import (read_sequences, validate_models,
-                                check_existing_features, check_missing_homomers)
+                                check_existing_features, check_missing_homomers,
+                                get_errors)
 import sys
 
 import logging
@@ -136,6 +137,12 @@ def parsing(args: list=None) -> argparse.Namespace:
                         "the most confident model is relaxed. If `none`, "
                         "relaxation is not run. Defaults to `best`."),
                         default='best', choices=['all','best','none'])
+    
+    parser.add_argument("--check_only",
+        help=("Only check for existing features and models, don't run AlphaFold."
+              " Searches for and prints out the error messages in the "
+              "ibex stdout files."),
+        action='store_true')
  
     return parser.parse_args(args)
 
@@ -168,7 +175,8 @@ if __name__ == '__main__':
     
     if out_dir.exists():
         logging.info(f"Checking for existing models in {out_dir}...")
-        sequences_to_model, modeled = check_missing_homomers(completed, out_dir,
+        sequences_to_model, modeled, missing = check_missing_homomers(completed,
+                                            out_dir,
                                             sequences,
                                             args.stoichiometry,
                                             args.screen_mode,
@@ -179,6 +187,15 @@ if __name__ == '__main__':
     else:
         out_dir.mkdir()
         sequences_to_model = sequences
+    
+    # If only checking, print out the missing models
+    if args.check_only:
+        logging.info("Missing models:")
+        if len(missing) == 0:
+            print("None")
+        else:
+            error_files = get_errors(missing, out_dir)
+            exit(0)
     
     if len(sequences_to_model) > 0:
         # Make complexes

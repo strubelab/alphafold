@@ -145,7 +145,7 @@ def check_missing_models(completed: List[str], out_dir: Path,
                          screen_mode: bool,
                          models_to_run: List[str],
                          multimer_predictions_per_model: int
-                         ) -> Tuple[List[SeqRecord], List[str]]:
+                         ) -> Tuple[List[SeqRecord], List[str], List[str]]:
     """
     Obtain the list of sequences that don't have a model yet
 
@@ -167,12 +167,16 @@ def check_missing_models(completed: List[str], out_dir: Path,
     ncandidate = stoich[1]
     # Get the ids of the sequences that have a model already created
     modeled = []
+    missing = []
     if screen_mode:
         # If in screen mode, only look for the 'iptms.json' file
         for sid in completed:
-            model_scores = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}' / 'iptms.json'
+            model_dir = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            model_scores = model_dir / 'iptms.json'
             if model_scores.exists():
                 modeled.append(sid)
+            else:
+                missing.append(sid)
     else:
         # If making full models, count all the ranked*.pdb files
         for sid in completed:
@@ -181,6 +185,8 @@ def check_missing_models(completed: List[str], out_dir: Path,
             nmodels = len(models_to_run) * multimer_predictions_per_model
             if len(model_files) == nmodels:
                 modeled.append(sid)
+            else:
+                missing.append(sid)
             
 
     to_model = [s for s in completed if s not in modeled]
@@ -188,7 +194,7 @@ def check_missing_models(completed: List[str], out_dir: Path,
     # Get the sequences to model
     sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
     
-    return sequences_to_model, modeled
+    return sequences_to_model, modeled, missing
 
 
 def check_missing_homomers(completed: List[str], out_dir: Path,
@@ -197,7 +203,7 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
                           screen_mode: bool,
                           models_to_run: List[str],
                           multimer_predictions_per_model: int,
-                          ) -> Tuple[List[SeqRecord], List[str]]:
+                          ) -> Tuple[List[SeqRecord], List[str], List[str]]:
     """
     Obtain the list of sequences that don't have a model yet
 
@@ -211,12 +217,15 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
     """
     # Get the ids of the sequences that have a model already created
     modeled = []
+    missing = []
     if screen_mode:
         for sid in completed:
             # If in screen mode, only look for the 'iptms.json' file
             model_scores = out_dir / f'{sid}-{stoich}' / 'iptms.json'
             if model_scores.exists():
                 modeled.append(sid)
+            else:
+                missing.append(sid)
     else:
         for sid in completed:
             # If making full models, count all the ranked*.pdb files
@@ -225,13 +234,15 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
             nmodels = len(models_to_run) * multimer_predictions_per_model
             if len(model_files) == nmodels:
                 modeled.append(sid)
+            else:
+                missing.append(sid)
 
     to_model = [s for s in completed if s not in modeled]
 
     # Get the sequences to model
     sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
     
-    return sequences_to_model, modeled
+    return sequences_to_model, modeled,  missing
 
 
 ######## Find random seeds
@@ -302,3 +313,37 @@ def get_seeds(top_complexes: List[str], top_ligands: List[str],
                 break
     
     return seeds
+
+
+def get_errors(missing_models: List[str], models_dir:Path) -> Dict[str, int]:
+    """
+    Read the random seeds from the stdout files of the given models
+
+    Args:
+        missing_models (List[str]): Ids of the missing candidates
+        top_ligands (List[str]): Names of the top ligands
+        models_dir (Path): Directory with the models and the `out_ibe` directory
+
+    Returns:
+        Dict[str, int]: Dictionary with {ligand: seed} pairs
+    """
+    # Find the files in which each top ligand is run, and get the random seed
+    out_files = list((models_dir / 'out_ibex').glob('*.out'))
+    error_files = {}
+    for candidate in missing_models:
+        print(candidate)
+        for fout in out_files:
+            with open(fout, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if re.search(rf'{candidate}', line):
+                        print('')
+                        print(fout)
+                        print(lines[-1])
+                        error_files[candidate] = fout
+                        break
+            # Check if the candidate has been found
+            if candidate in error_files:
+                break
+    
+    return error_files

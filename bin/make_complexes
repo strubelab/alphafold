@@ -11,7 +11,8 @@ from datetime import date
 import pickle
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 from alphafold_ibex.utils_complexes import (read_sequences, validate_models, get_id,
-                                check_existing_features, check_missing_models)
+                                check_existing_features, check_missing_models,
+                                get_errors)
 
 from typing import List
 import sys
@@ -184,6 +185,12 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--seeds",
         help=("Path to a .pkl file with the random seeds to use for the complexes."),
         default=None, type=validate_seed)
+    
+    parser.add_argument("--check_only",
+        help=("Only check for existing features and models, don't run AlphaFold."
+              " Searches for and prints out the error messages in the "
+              "ibex stdout files."),
+        action='store_true')
  
     return parser.parse_args(args)
 
@@ -217,7 +224,8 @@ if __name__ == '__main__':
     
     if out_dir.exists():
         logging.info(f"Checking for existing models in {out_dir}...")
-        sequences_to_model, modeled = check_missing_models(completed, out_dir,
+        sequences_to_model, modeled, missing = check_missing_models(completed,
+                                            out_dir,
                                             bait,
                                             sequences,
                                             args.stoichiometry,
@@ -230,6 +238,15 @@ if __name__ == '__main__':
         out_dir.mkdir()
         sequences_to_model = sequences
     
+    # If only checking, print out the missing models
+    if args.check_only:
+        logging.info("Missing models:")
+        if len(missing) == 0:
+            print("None")
+        else:
+            error_files = get_errors(missing, out_dir)
+            exit(0)
+
     # Get random seeds if given
     if args.seeds is not None:
         logging.info("Reading random seeds...")
