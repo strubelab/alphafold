@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+
+"""
+Script to make features for a list of protein sequences
+"""
+
+import argparse
+from pathlib import Path
+from datetime import date
+from alphafold_ibex.alphafold_ibex import AlphafoldIbex
+from alphafold_ibex.utils_complexes import (read_sequences, validate_models,
+                                check_missing_monomers, get_errors, get_id)
+import sys
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
+
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Args:
+        args (list, optional): List of the arguments to be parsed (only to be
+            used for testing). If none is provided, it is taken from sys.argv.
+            Defaults to None.
+
+    Returns:
+        argparse.Namespace
+    """
+
+    def validate_num(num:str):
+        """
+        Validate the number in the arguments for gpu, mem, time and recycles
+
+        Args:
+            num (str): Number provided
+        """
+        if num=='auto':
+            return num
+        
+        return int(num)
+    
+    def validate_date(d:str):
+        """
+        Validate the date format
+
+        Args:
+            d (str): date in YYYY-MM-DD format
+
+        Returns:
+            str: same date if valid
+        """
+        dsplit = d.split('-')
+        if len(dsplit) < 3:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        elif int(dsplit[1]) > 12:
+            raise ValueError('Incorrect date format, please provide date as YYYY-MM-DD.')
+        
+        return d
+    
+
+    parser = argparse.ArgumentParser(description=('Makes monomeric models for'
+                ' the proteins given in `input`. The features '
+                'must be pre-calculated and provided in a directory.'))
+
+    parser.add_argument("--input", help=('Fasta file(s) or directory with the '
+        'sequence(s) to model as monomers.'), nargs='+')
+
+    parser.add_argument("--destination", 
+        help=('Path for saving the resulting AlphaFold models. It will create '
+        'one subdirectory for each model. Also will contain the sequence files ' 
+        'as they were submitted to ibex, the script that was submitted and the '
+        'ibex stdout files.'), required=True)
+
+    parser.add_argument("--recycles", help=('Only for monomeric models. '
+                                    'Set the number of times to recycle the '
+        'output through the network. More recycles might help to mildly '
+        'improve the quality of the models in some cases. Default is 3, max '
+        'recommended is 10. Multimeric models run up to 20 recycles, but '
+        'will stop if the difference in pairwise distances is less than 0.5.'
+        ), type=int, default=6)
+    
+    parser.add_argument("--time", help=('Time in minutes to give to each job. '
+        '(default=30)'), type=int, default=30)
+
+    parser.add_argument("--mem", help=('Memory in GB to allocate to each job. '
+        '(default="auto")'), type=validate_num, default='auto')
+
+    parser.add_argument("--mail", help=('Email to send notifications about the '
+                'job progess in ibex.'), type=str)
+    
+    parser.add_argument("--max_jobs",
+        help=("Maximum number of jobs to submit simultaneously to ibex. Default=1990"),
+        type=int, default=1990)
+    
+    parser.add_argument("--gpu_type", help=("Whether to use V100 or A100 GPU."
+        " If you don't know what this is, leave the default. (Default=v100)"),
+        default='v100', choices=['v100','a100'])
+    
+    parser.add_argument("--max_template_date",
+        help=('Maximum template release date to consider. Give value in '
+              'YYYY-MM-DD format.'), type=validate_date,
+        default=date.today().isoformat())
+    
+    parser.add_argument("--models_to_relax", help=("The models to run the "
+                        "final relaxation step on. If `all`, all models are "
+                        "relaxed, which may be time consuming. If `best`, only "
+                        "the most confident model is relaxed. If `none`, "
+                        "relaxation is not run. Defaults to `best`."),
+                        default='all', choices=['all','best','none'])
+    
+    parser.add_argument("--check_only",
+        help=("Only check for existing features and models, don't run AlphaFold."
+              " Searches for and prints out the error messages in the "
+              "ibex stdout files."),
+        action='store_true')
+ 
+    return parser.parse_args(args)
+
+
+if __name__ == '__main__':
+
+    args = parsing()
+    
+    # Read all sequences in every input file or directory and put together in a list
+    sequences = []
+    for f in args.input:
+        sequences += read_sequences(f)
+    
+    logging.info(f'Read {len(sequences)} sequences to model.')
+
+    ######### Check for existing models in the destination directory
+    completed = [get_id(s.id) for s in sequences]
+    
+    out_dir = Path(args.destination)
+    
+    if out_dir.exists():
+        logging.info(f"Checking for existing models in {out_dir}...")
+        sequences_to_model, modeled, missing = check_missing_monomers(completed,
+                                            out_dir,
+                                            sequences)
+        logging.info(f'Found {len(modeled)} models for {len(sequences)} '
+                     'candidate sequences.')
+    else:
+        out_dir.mkdir()
+        sequences_to_model = sequences
+    
+    # If only checking, print out the missing models
+    if args.check_only:
+        logging.info("Missing models:")
+        if len(missing) == 0:
+            print("None")
+        else:
+            error_files = get_errors(missing, out_dir)
+            exit(0)
+    
+    if len(sequences_to_model) > 0:
+        # Make complexes
+        complexes = [[s] for s in sequences_to_model]
+        logging.info(f'{len(complexes)} sequences to model.')
+
+        # Save command to output dir
+        with open(out_dir/'command.txt', 'w') as f:
+            f.write(' '.join(sys.argv))
+            f.write('\n')
+        
+        # Run AlphaFold
+        logging.info('Running AlphaFoldIbex...')
+        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_monomers',
+                        models_to_relax=args.models_to_relax,
+                        gpu_type=args.gpu_type,
+                        mail=args.mail,
+                        time_per_command=args.time,
+                        mem=args.mem,
+                        recycles=args.recycles)
+
+        exe.run()

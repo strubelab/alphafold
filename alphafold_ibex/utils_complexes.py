@@ -259,6 +259,40 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
     return sequences_to_model, modeled,  missing
 
 
+def check_missing_monomers(completed: List[str], out_dir: Path,
+                          sequences: List[SeqRecord],
+                          ) -> Tuple[List[SeqRecord], List[str], List[str]]:
+    """
+    Obtain the list of sequences that don't have a model yet
+
+    Args:
+        completed (List): List of ids of the sequences that have features
+        out_dir (Path): Output directory for the models
+        sequences (List[SeqRecord]): Sequences to model
+    Returns:
+        List[SeqRecord]: List of sequences that don't have a model yet
+    """
+    # Get the ids of the sequences that have a model already created
+    modeled = []
+    missing = []
+
+    for sid in completed:
+        # If making full models, count all the ranked*.pdb files
+        model_dir = out_dir / sid
+        model_files = list(model_dir.glob('ranked_*.pdb'))
+        if len(model_files) == 5:
+            modeled.append(sid)
+        else:
+            missing.append(sid)
+
+    to_model = [s for s in completed if s not in modeled]
+
+    # Get the sequences to model
+    sequences_to_model = [s for s in sequences if get_id(s.id) in to_model]
+    
+    return sequences_to_model, modeled,  missing
+
+
 ######## Find random seeds
 
 def get_scores(models_dir:Path) -> pd.DataFrame:
