@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
-from alphafold_ibex.utils import (read_sequences, validate_models,
+from alphafold_ibex.utils_complexes import (read_sequences, validate_models,
                                 check_existing_features, check_missing_homomers)
 import sys
 
@@ -152,44 +152,52 @@ if __name__ == '__main__':
     logging.info(f'Read {len(sequences)} sequences to multimerize.')
     
     ######### Check for existing features
-    features_dir = Path(args.features_dir)
+    logging.info(f'Checking for existing features in {args.features_dir}...')
     
+    features_dir = Path(args.features_dir)
     completed = check_existing_features(features_dir, sequences)
+    
+    logging.info(f'Found {len(completed)} features for {len(sequences)} '
+                 'candidate sequences.')
     
     ######### Check for existing models in the destination directory
     
     out_dir = Path(args.destination)
     
     if out_dir.exists():
-        sequences_to_model = check_missing_homomers(completed, out_dir,
+        logging.info(f"Checking for existing models in {out_dir}...")
+        sequences_to_model, modeled = check_missing_homomers(completed, out_dir,
                                                   sequences, args.stoichiometry)
+        logging.info(f'Found {len(modeled)} models for {len(sequences)} '
+                     'candidate sequences.')
     else:
         out_dir.mkdir()
         sequences_to_model = sequences
+    
+    if len(sequences_to_model) > 0:
+        # Make complexes
+        complexes = [[s]*args.stoichiometry for s in sequences_to_model]
+        logging.info(f'{len(complexes)} complexes to model.')
         
-    # Make complexes
-    complexes = [[s]*args.stoichiometry for s in sequences_to_model]
-    logging.info(f'{len(complexes)} complexes to model.')
-    
-    ###### Get the rest of the parameters
-    model_names = validate_models(args.models_to_run)
+        ###### Get the rest of the parameters
+        model_names = validate_models(args.models_to_run)
 
-    # Save command to output dir
-    with open(out_dir/'command.txt', 'w') as f:
-        f.write(' '.join(sys.argv))
-        f.write('\n')
-    
-    # Run AlphaFold
-    logging.info('Running AlphaFoldIbex...')
-    exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
-                    models_to_relax=args.models_to_relax,
-                    multimer_predictions_per_model=args.multimer_predictions_per_model,
-                    gpu_type=args.gpu_type,
-                    screen_mode=args.screen_mode,
-                    features_dir=features_dir,
-                    mail=args.mail,
-                    time_per_command=args.time,
-                    mem=args.mem,
-                    model_names=model_names)
+        # Save command to output dir
+        with open(out_dir/'command.txt', 'w') as f:
+            f.write(' '.join(sys.argv))
+            f.write('\n')
+        
+        # Run AlphaFold
+        logging.info('Running AlphaFoldIbex...')
+        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
+                        models_to_relax=args.models_to_relax,
+                        multimer_predictions_per_model=args.multimer_predictions_per_model,
+                        gpu_type=args.gpu_type,
+                        screen_mode=args.screen_mode,
+                        features_dir=features_dir,
+                        mail=args.mail,
+                        time_per_command=args.time,
+                        mem=args.mem,
+                        model_names=model_names)
 
-    exe.run()
+        exe.run()

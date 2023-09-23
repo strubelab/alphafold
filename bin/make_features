@@ -9,9 +9,12 @@ from Bio import SeqIO
 from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
-from alphafold_ibex.utils import read_sequences, check_missing_sequences
+from alphafold_ibex.utils_complexes import read_sequences, check_missing_sequences
                                   
 import sys
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 def parsing(args: list=None) -> argparse.Namespace:
     """
@@ -113,7 +116,7 @@ if __name__ == '__main__':
     
     sequences = [[s] for s in sequences]
     
-    print(f'Read {len(sequences)} sequences...')
+    logging.info(f'Read {len(sequences)} sequences...')
     
     ######### Check for any existing features
     out_dir = Path(args.destination)
@@ -124,7 +127,7 @@ if __name__ == '__main__':
         out_dir.mkdir()
         missing_sequences = sequences
     
-    print(f'Number of features to generate: {len(missing_sequences)}')
+    logging.info(f'Number of features to generate: {len(missing_sequences)}')
     
     ######### Get the rest of the parameters
     
@@ -150,7 +153,7 @@ if __name__ == '__main__':
     
     # Run AlphaFold
     if len(missing_sequences) > 0:
-        print('Running AlphaFold to calculate features...')
+        logging.info('Running AlphaFold to calculate features...')
         exe = AlphafoldIbex(missing_sequences, out_dir=out_dir, jobname='AF_features',
                             gpu_type=gpu_type, only_features_chain='A',
                             mail=args.mail, time_per_command=time, mem=mem,
