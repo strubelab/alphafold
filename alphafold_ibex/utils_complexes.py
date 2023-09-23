@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 from Bio.SeqRecord import SeqRecord
 
-from typing import Dict
+from typing import Dict, Tuple
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -138,8 +138,14 @@ def check_existing_features(features_dir: Path, sequences: List[SeqRecord],
     return completed
 
 
-def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
-                          sequences: List[SeqRecord]) -> List[SeqRecord]:
+def check_missing_models(completed: List[str], out_dir: Path,
+                         bait: SeqRecord,
+                         sequences: List[SeqRecord],
+                         stoich: List[int],
+                         screen_mode: bool,
+                         models_to_run: List[str],
+                         multimer_predictions_per_model: int
+                         ) -> Tuple[List[SeqRecord], List[str]]:
     """
     Obtain the list of sequences that don't have a model yet
 
@@ -148,18 +154,34 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
         out_dir (Path): Output directory for the models
         bait (SeqRecord): Bait sequence
         sequences (List[SeqRecord]): Candidate sequences
-
+        stoich (List[int]): Stoichiometry of the complexes in [n, n] format.
+        screen_mode (bool): Whether to the run was only in screen mode or not.
+        models_to_run (int): Names of the models to run.
+        multimer_predictions_per_model (int): Number of predictions to make per model.
     Returns:
         List[SeqRecord]: List of candidate sequences that don't have a model yet
     """
 
     bait_id = get_id(bait.id)
+    nbait = stoich[0]
+    ncandidate = stoich[1]
     # Get the ids of the sequences that have a model already created
     modeled = []
-    for sid in completed:
-        model_scores = out_dir / f'{bait_id}-1_{sid}-1' / 'iptms.json'
-        if model_scores.exists():
-            modeled.append(sid)
+    if screen_mode:
+        # If in screen mode, only look for the 'iptms.json' file
+        for sid in completed:
+            model_scores = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}' / 'iptms.json'
+            if model_scores.exists():
+                modeled.append(sid)
+    else:
+        # If making full models, count all the ranked*.pdb files
+        for sid in completed:
+            model_dir = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            model_files = list(model_dir.glob('ranked_*.pdb'))
+            nmodels = len(models_to_run) * multimer_predictions_per_model
+            if len(model_files) == nmodels:
+                modeled.append(sid)
+            
 
     to_model = [s for s in completed if s not in modeled]
 
@@ -170,7 +192,12 @@ def check_missing_models(completed: List[str], out_dir: Path, bait: SeqRecord,
 
 
 def check_missing_homomers(completed: List[str], out_dir: Path,
-                          sequences: List[SeqRecord], stoich:int) -> List[SeqRecord]:
+                          sequences: List[SeqRecord],
+                          stoich:int,
+                          screen_mode: bool,
+                          models_to_run: List[str],
+                          multimer_predictions_per_model: int,
+                          ) -> Tuple[List[SeqRecord], List[str]]:
     """
     Obtain the list of sequences that don't have a model yet
 
@@ -184,10 +211,20 @@ def check_missing_homomers(completed: List[str], out_dir: Path,
     """
     # Get the ids of the sequences that have a model already created
     modeled = []
-    for sid in completed:
-        model_scores = out_dir / f'{sid}-{stoich}' / 'iptms.json'
-        if model_scores.exists():
-            modeled.append(sid)
+    if screen_mode:
+        for sid in completed:
+            # If in screen mode, only look for the 'iptms.json' file
+            model_scores = out_dir / f'{sid}-{stoich}' / 'iptms.json'
+            if model_scores.exists():
+                modeled.append(sid)
+    else:
+        for sid in completed:
+            # If making full models, count all the ranked*.pdb files
+            model_dir = out_dir / f'{sid}-{stoich}'
+            model_files = list(model_dir.glob('ranked_*.pdb'))
+            nmodels = len(models_to_run) * multimer_predictions_per_model
+            if len(model_files) == nmodels:
+                modeled.append(sid)
 
     to_model = [s for s in completed if s not in modeled]
 

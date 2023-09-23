@@ -144,6 +144,8 @@ if __name__ == '__main__':
 
     args = parsing()
     
+    model_names = validate_models(args.models_to_run)
+    
     # Read all sequences in every input file or directory and put together in a list
     sequences = []
     for f in args.input:
@@ -167,7 +169,11 @@ if __name__ == '__main__':
     if out_dir.exists():
         logging.info(f"Checking for existing models in {out_dir}...")
         sequences_to_model, modeled = check_missing_homomers(completed, out_dir,
-                                                  sequences, args.stoichiometry)
+                                            sequences,
+                                            args.stoichiometry,
+                                            args.screen_mode,
+                                            model_names,
+                                            args.multimer_predictions_per_model)
         logging.info(f'Found {len(modeled)} models for {len(sequences)} '
                      'candidate sequences.')
     else:
@@ -178,9 +184,6 @@ if __name__ == '__main__':
         # Make complexes
         complexes = [[s]*args.stoichiometry for s in sequences_to_model]
         logging.info(f'{len(complexes)} complexes to model.')
-        
-        ###### Get the rest of the parameters
-        model_names = validate_models(args.models_to_run)
 
         # Save command to output dir
         with open(out_dir/'command.txt', 'w') as f:

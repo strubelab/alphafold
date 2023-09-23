@@ -193,6 +193,7 @@ if __name__ == '__main__':
     args = parsing()
     
     bait = SeqIO.read(args.bait, 'fasta')
+    model_names = validate_models(args.models_to_run)
     
     # Read all candidate sequences in every input file or directory and put together in a list
     sequences = []
@@ -217,7 +218,12 @@ if __name__ == '__main__':
     if out_dir.exists():
         logging.info(f"Checking for existing models in {out_dir}...")
         sequences_to_model, modeled = check_missing_models(completed, out_dir,
-                                                           bait, sequences)
+                                            bait,
+                                            sequences,
+                                            args.stoichiometry,
+                                            args.screen_mode,
+                                            model_names,
+                                            args.multimer_predictions_per_model)
         logging.info(f'Found {len(modeled)} models for {len(completed)} '
                      'pre-calculated features.')
     else:
@@ -241,9 +247,6 @@ if __name__ == '__main__':
         ncandidate = args.stoichiometry[1]
         complexes = [[bait]*nbait + [s]*ncandidate for s in sequences_to_model]
         logging.info(f'{len(complexes)} complexes to model.')
-        
-        ###### Get the rest of the parameters
-        model_names = validate_models(args.models_to_run)
 
         # Save command to output dir
         with open(out_dir/'command.txt', 'w') as f:
