@@ -53,7 +53,18 @@ def get_id(seqid:str) -> str:
         return names[0]
 
 
-def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
+def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]
+                            ) -> Tuple[List[List[SeqRecord]], List[str]]:
+    """
+    Check which sequences don't have features created yet
+
+    Args:
+        out_dir (Path): Directory where the features are saved
+        sequences (List[List[SeqRecord]]): Sequences to check
+
+    Returns:
+        Tuple[List[List[SeqRecord]], List[str]]
+    """
     
     logging.info(f'Checking for existing features in {out_dir}...')
     
@@ -62,17 +73,20 @@ def check_missing_sequences(out_dir:Path, sequences:List[List[SeqRecord]]):
 
     # Get the ids of the sequences that have a `features.pkl` file
     completed = []
+    missing_ids = []
     for sid in all_ids:
         features_file = out_dir / sid / 'features.pkl'
         if features_file.exists():
             completed.append(sid)
+        else:
+            missing_ids.append(sid)
     
     logging.info(f'Found {len(completed)} sequences with features already calculated.')
 
     # Get the sequences that don't have features created yet
     missing_sequences = [s for s in sequences if s[0].id.split('|')[1] not in completed]
     
-    return missing_sequences
+    return missing_sequences, missing_ids
 
 
 def validate_models(models:list) -> list:

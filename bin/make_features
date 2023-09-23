@@ -9,7 +9,9 @@ from Bio import SeqIO
 from pathlib import Path
 from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
-from alphafold_ibex.utils_complexes import read_sequences, check_missing_sequences
+from alphafold_ibex.utils_complexes import (read_sequences,
+                                            get_errors,
+                                            check_missing_sequences)
                                   
 import sys
 
@@ -101,6 +103,12 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Maximum template release date to consider. Give value in '
               'YYYY-MM-DD format.'), type=validate_date,
         default=date.today().isoformat())
+    
+    parser.add_argument("--check_only",
+        help=("Only check for existing features, don't run AlphaFold."
+              " Searches for and prints out the error messages in the "
+              "ibex stdout files."),
+        action='store_true')
  
     return parser.parse_args(args)
 
@@ -122,10 +130,19 @@ if __name__ == '__main__':
     out_dir = Path(args.destination)
     
     if out_dir.exists():
-        missing_sequences = check_missing_sequences(out_dir, sequences)
+        missing_sequences, missing_ids = check_missing_sequences(out_dir, sequences)
     else:
         out_dir.mkdir()
         missing_sequences = sequences
+    
+    # If only checking, print out the names of the missing sequences and exit
+    if args.check_only:
+        logging.info("Missing features:")
+        if len(missing_ids) == 0:
+            print("None")
+        else:
+            error_files = get_errors(missing_ids, out_dir)
+            exit(0)
     
     logging.info(f'Number of features to generate: {len(missing_sequences)}')
     
