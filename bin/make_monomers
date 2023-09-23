@@ -116,6 +116,12 @@ def parsing(args: list=None) -> argparse.Namespace:
               " Searches for and prints out the error messages in the "
               "ibex stdout files."),
         action='store_true')
+    
+    parser.add_argument("--old_uniclust",
+        help=("If hhblits is causing an error along the lines of `ERROR: did "
+              "not find ### match states in sequence 1 of ##########`, try "
+              "using the older version of the UniClust database (UniRef30_2021_03) "
+              "to calculate the MSAs with HHblits."), action='store_true')
  
     return parser.parse_args(args)
 
@@ -174,6 +180,7 @@ if __name__ == '__main__':
                         mail=args.mail,
                         time_per_command=args.time,
                         mem=args.mem,
-                        recycles=args.recycles)
+                        recycles=args.recycles,
+                        old_uniclust=args.old_uniclust)
 
         exe.run()
