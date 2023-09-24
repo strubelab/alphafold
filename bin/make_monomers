@@ -122,6 +122,14 @@ def parsing(args: list=None) -> argparse.Namespace:
               "not find ### match states in sequence 1 of ##########`, try "
               "using the older version of the UniClust database (UniRef30_2021_03) "
               "to calculate the MSAs with HHblits."), action='store_true')
+    
+    parser.add_argument("--use_precomputed_msas",
+        help=("Set this flag if you want to reuse the MSA outputs from a "
+        "previous run, for example if there was an error after the "
+        "MSA step and you want to start the same run again, or if you want to "
+        "make the same model but with a different number of recycles. "
+        "Make sure to copy the old results to a new directory if you don't "
+        "want to overwrite them."), action='store_true')
  
     return parser.parse_args(args)
 
@@ -181,6 +189,7 @@ if __name__ == '__main__':
                         time_per_command=args.time,
                         mem=args.mem,
                         recycles=args.recycles,
-                        old_uniclust=args.old_uniclust)
+                        old_uniclust=args.old_uniclust,
+                        use_precomputed_msas=args.use_precomputed_msas)
 
         exe.run()
