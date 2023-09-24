@@ -236,7 +236,7 @@ if __name__ == '__main__':
                      'pre-calculated features.')
     else:
         out_dir.mkdir()
-        sequences_to_model = sequences
+        sequences_to_model = [s for s in sequences if get_id(s.id) in completed]
     
     # If only checking, print out the missing models
     if args.check_only:

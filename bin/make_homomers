@@ -10,7 +10,7 @@ from datetime import date
 from alphafold_ibex.alphafold_ibex import AlphafoldIbex
 from alphafold_ibex.utils_complexes import (read_sequences, validate_models,
                                 check_existing_features, check_missing_homomers,
-                                get_errors)
+                                get_errors, get_id)
 import sys
 
 import logging
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                      'candidate sequences.')
     else:
         out_dir.mkdir()
-        sequences_to_model = sequences
+        sequences_to_model = [s for s in sequences if get_id(s.id) in completed]
     
     # If only checking, print out the missing models
     if args.check_only:
