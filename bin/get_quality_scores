@@ -5,15 +5,10 @@ Script to extract the quality scores the models made by AlphaFold
 """
 
 import argparse
-from Bio import SeqIO
 from pathlib import Path
-from datetime import date
 import pickle
-
+import json
 from alphafold_ibex.utils import process_outputs
-
-from typing import List
-import sys
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -83,6 +78,14 @@ if __name__ == '__main__':
                 
                 # Delete original pickle files
                 if args.delete_pickles:
+                    # Read model rankings
+                    with open(d / 'ranking_debug.json', 'r') as f:
+                        model_rank = json.load(f)['order']
+                        
+                    # Remove the highest-ranking model from the pickle list
+                    pickle_name = d / f'result_{model_rank[0]}.pkl'
+                    results_pkls.remove(pickle_name)
+                    
                     for pkl in results_pkls:
                         pkl.unlink()
     
