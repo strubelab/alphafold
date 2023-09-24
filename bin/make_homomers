@@ -143,6 +143,10 @@ def parsing(args: list=None) -> argparse.Namespace:
               " Searches for and prints out the error messages in the "
               "ibex stdout files."),
         action='store_true')
+    
+    parser.add_argument("--jobname",
+        help=("Name of the job to submit to ibex. Defaults to 'AF_complexes'."),
+        default='AF_homomers')
  
     return parser.parse_args(args)
 
@@ -209,7 +213,7 @@ if __name__ == '__main__':
         
         # Run AlphaFold
         logging.info('Running AlphaFoldIbex...')
-        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_complexes',
+        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname=args.jobname,
                         models_to_relax=args.models_to_relax,
                         multimer_predictions_per_model=args.multimer_predictions_per_model,
                         gpu_type=args.gpu_type,
