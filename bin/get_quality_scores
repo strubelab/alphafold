@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+
+"""
+Script to extract the quality scores the models made by AlphaFold
+"""
+
+import argparse
+from Bio import SeqIO
+from pathlib import Path
+from datetime import date
+import pickle
+
+from alphafold_ibex.utils import process_outputs
+
+from typing import List
+import sys
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
+def parsing(args: list=None) -> argparse.Namespace:
+    """
+    Creates the argument parser instance and applies it to the command line
+    input
+
+    Args:
+        args (list, optional): List of the arguments to be parsed (only to be
+            used for testing). If none is provided, it is taken from sys.argv.
+            Defaults to None.
+
+    Returns:
+        argparse.Namespace
+    """
+    
+    def validate_dir(d:str) -> Path:
+        """
+        Validate that the directory with the features exists
+        """
+        d = Path(d)
+        if not d.exists():
+            raise ValueError("The specified directory doesn't exist.")
+            
+        return d
+    
+
+    parser = argparse.ArgumentParser(description=('Reads all the quality scores '
+        'from AlphaFold and saves them to a file. Optionally it removes the .pkl'
+        ' files afterwards.'))
+    
+    parser.add_argument("--models_dir", 
+        help=('Path with the resulting AlphaFold models.'), required=True,
+        type=validate_dir)
+    
+    parser.add_argument("--delete_pickles",
+        help=("Whether to erase the .pkl files after extracting the scores. It "
+              "is recommended to do so, as they take up a lot of space."),
+        action='store_true')
+    
+ 
+    return parser.parse_args(args)
+
+
+if __name__ == '__main__':
+
+    args = parsing()
+    
+    count=0
+    for d in args.models_dir.iterdir():
+        if d.is_dir():
+            results_pkls = list(d.glob('result_model_*.pkl'))
+            if len(results_pkls) > 0:
+                count += 1
+                prediction_results, outs = process_outputs(results_pkls)
+                
+                for key in outs:
+                    # Delete some values to save space
+                    del outs[key]['adj']
+                    del outs[key]['dists']
+                
+                # Save the results to a pickle
+                with open(d / 'results_all_models.pkl', 'wb') as f:
+                    pickle.dump(outs, f)
+                
+                # Delete original pickle files
+                if args.delete_pickles:
+                    for pkl in results_pkls:
+                        pkl.unlink()
+    
+    logging.info(f"Processed {count} models.")

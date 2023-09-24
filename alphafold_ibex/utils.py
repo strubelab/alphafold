@@ -57,8 +57,12 @@ def parse_results(prediction_result):
         "dists": to_np(dist_mtx),
         "adj": to_np(contact_mtx),
         "pae": to_np(prediction_result['predicted_aligned_error']),
-        "pTMscore": to_np(prediction_result['ptm'])
+        "pTMscore": to_np(prediction_result['ptm']),
+        "ranking_confidence": to_np(prediction_result['ranking_confidence'])
             }
+    
+    if "iptm" in prediction_result:
+        out["ipTMscore"] = to_np(prediction_result['iptm'])
 
     return out
 

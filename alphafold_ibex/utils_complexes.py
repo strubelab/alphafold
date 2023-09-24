@@ -388,7 +388,8 @@ def get_errors(missing_models: List[str], models_dir:Path) -> Dict[str, int]:
                     if re.search(rf'{candidate}', line):
                         print(f"Output file: {fout.with_suffix('.err')}")
                         print(f"Last five lines of file:")
-                        print(lines[-5:])
+                        for l in lines[-5:]:
+                            print(l.strip())
                         error_files[candidate] = fout
                         break
             # Check if the candidate has been found
