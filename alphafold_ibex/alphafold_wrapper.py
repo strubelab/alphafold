@@ -17,6 +17,7 @@ import shutil
 import pandas as pd
 import numpy as np
 from typing import List, Tuple
+import pickle
 
 from executor.executor import Executor
 
@@ -56,6 +57,7 @@ class AlphaFold(Executor):
                  make_plots: bool = True,
                  screen_mode: bool = False,
                  random_seed: int = None,
+                 get_quality_scores: bool = False,
                  **kw):
         """
         Instantiate variables
@@ -109,6 +111,10 @@ class AlphaFold(Executor):
             random_seed (int, optional):
                 Random seed to use for the data pipeline. Doesn't guarantee
                 deterministic results. Defaults to None.
+            get_quality_scores (bool, optional):
+                If True, the quality scores will be extracted from the models
+                and saved to a file. The pickle files will be erased except for
+                the one with the highest score. Defaults to False.
         """
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent/'config.ini')
@@ -141,6 +147,7 @@ class AlphaFold(Executor):
         self.only_pae_interaction = only_pae_interaction
         self.make_plots = make_plots
         self.screen_mode = screen_mode
+        self.get_quality_scores = get_quality_scores
         
         if model_names is None:
             self.model_names_str = ''
@@ -404,6 +411,23 @@ class AlphaFold(Executor):
                 f.write(f"min_mean:{min_mean:.2f}\n")
                 f.write(f"min_rolling:{min_rolling:.2f}\n")
                 f.write(f"iptm:{iptm_best:.2f}\n")
+            
+            # Erase all .pkl files except for the best model
+            pickle_files = list(self.out_model.glob('*.pkl'))
+            pickle_files.remove(self.out_model/f'result_{self.model_rank[0]}.pkl')
+            for pf in pickle_files:
+                pf.unlink()
+        
+        if self.get_quality_scores:
+            # Get the quality scores from the models and save them to a file
+            for key in self.outs:
+                # Delete some values to save space
+                del self.outs[key]['adj']
+                del self.outs[key]['dists']
+            
+            # Save the results to a pickle
+            with open(self.out_model / 'results_all_models.pkl', 'wb') as f:
+                pickle.dump(self.outs, f)
             
             # Erase all .pkl files except for the best model
             pickle_files = list(self.out_model.glob('*.pkl'))

@@ -147,6 +147,12 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--jobname",
         help=("Name of the job to submit to ibex. Defaults to 'AF_complexes'."),
         default='AF_homomers')
+    
+    parser.add_argument("--get_quality_scores",
+        help=("If set, the quality scores will be extracted from the models "
+              "and saved to a file. The pickle files will be erased except for "
+              "the one with the highest score. Defaults to False."),
+        action='store_true')
  
     return parser.parse_args(args)
 
@@ -222,6 +228,7 @@ if __name__ == '__main__':
                         mail=args.mail,
                         time_per_command=args.time,
                         mem=args.mem,
-                        model_names=model_names)
+                        model_names=model_names,
+                        get_quality_scores=args.get_quality_scores)
 
         exe.run()

@@ -60,6 +60,8 @@ make_plots = sys.argv[14] == 'True'
 screen_mode = sys.argv[15] == 'True'
 
 read_random_seeds = sys.argv[16] == 'True'
+
+get_quality_scores = sys.argv[17] == 'True'
 #####################
 
 # Read sequences
@@ -89,7 +91,8 @@ for i, seqs in enumerate(sequences):
                 model_names=model_names,
                 make_plots=make_plots,
                 screen_mode=screen_mode,
-                random_seed=random_seeds[i])
+                random_seed=random_seeds[i],
+                get_quality_scores=get_quality_scores)
         logging.info(f"Running AlphaFold for target {exe.target_name}...")
         exe.run()
     

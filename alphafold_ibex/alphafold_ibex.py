@@ -28,6 +28,7 @@ class AlphafoldIbex(IbexRun):
         make_plots: bool = True,
         screen_mode: bool = False,
         random_seeds: List[int] = None,
+        get_quality_scores: bool = False,
         **kw):
         """
         Defines the variables for the ibex job array to run Program.
@@ -63,6 +64,10 @@ class AlphafoldIbex(IbexRun):
             random_seed (List[int], optional):
                 Random seeds to use for the data pipeline. One integer per model.
                 Doesn't guarantee deterministic results. Defaults to None.
+            get_quality_scores (bool, optional):
+                If True, the quality scores will be extracted from the models
+                and saved to a file. The pickle files will be erased except for
+                the one with the highest score. Defaults to False.
         """
         self.sequences = sequences
         
@@ -92,6 +97,7 @@ class AlphafoldIbex(IbexRun):
         self.make_plots = make_plots
         self.screen_mode = screen_mode
         self.random_seeds = random_seeds
+        self.get_quality_scores = get_quality_scores
         
         if self.random_seeds:
             assert len(self.sequences) == len(self.random_seeds), (
@@ -244,7 +250,8 @@ class AlphafoldIbex(IbexRun):
             f'{self.max_template_date} {self.only_features_chain} '
             f'{self.features_dir} {self.only_pae_interaction} '
             f'{self.model_names_str} {self.make_plots} {self.screen_mode} '
-            f'{self.random_seeds is not None}'
+            f'{self.random_seeds is not None} '
+            f'{self.get_quality_scores}'
         )
         
         if self.only_features_chain:
