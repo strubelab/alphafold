@@ -379,19 +379,27 @@ def get_errors(missing_models: List[str], models_dir:Path) -> Dict[str, int]:
     out_files = list((models_dir / 'out_ibex').glob('*.out'))
     error_files = {}
     for candidate in missing_models:
-        print(candidate)
+        print('')
+        print(f'Protein: {candidate}')
         for fout in out_files:
             with open(fout, 'r') as f:
                 lines = f.readlines()
                 for line in lines:
                     if re.search(rf'{candidate}', line):
-                        print('')
-                        print(fout)
-                        print(lines[-1])
+                        print(f"Output file: {fout.with_suffix('.err')}")
+                        print(f"Last five lines of file:")
+                        print(lines[-5:])
                         error_files[candidate] = fout
                         break
             # Check if the candidate has been found
             if candidate in error_files:
                 break
     
-    return error_files
+    # Rename the error files to add a .err extension
+    new_error_files = {}
+    for candidate, fout in error_files.items():
+        new_name = fout.with_suffix('.err')
+        fout.rename(new_name)
+        new_error_files[candidate] = new_name
+    
+    return new_error_files
