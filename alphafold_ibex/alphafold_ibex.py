@@ -18,7 +18,7 @@ class AlphafoldIbex(IbexRun):
     def __init__(self, sequences:list, out_dir:Path, time_per_command:int='auto',
         jobname:str='AlphafoldIbex', cpus:int=8, recycles:int=6, mem:int='auto',
         gpus:int='auto', gpu_type:str='v100', models_to_relax:str='best',
-        mail:str=None, multimer_predictions_per_model:int=5,
+        mail:str=None, multimer_predictions_per_model:int=1,
         use_precomputed_msas:bool=False, old_uniclust:bool=False,
         max_template_date:str=date.today().isoformat(),
         only_features_chain: Union[str, None]=None,
