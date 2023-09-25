@@ -431,6 +431,7 @@ class AlphaFold(Executor):
             
             # Erase all .pkl files except for the best model
             pickle_files = list(self.out_model.glob('*.pkl'))
-            pickle_files.remove(self.out_model/f'result_{self.model_rank[0]}.pkl')
+            pickle_files.remove(self.out_model / f'result_{self.model_rank[0]}.pkl')
+            pickle_files.remove(self.out_model / 'results_all_models.pkl')
             for pf in pickle_files:
                 pf.unlink()
