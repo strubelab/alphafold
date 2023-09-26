@@ -5,6 +5,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Results](#results)
+- [AlphaFold pulldown](#alphafold-pulldown)
 - [Updating Alphafold](#updating-alphafold)
 - [Troubleshooting](#troubleshooting)
 
@@ -370,6 +371,76 @@ The numbers in parenthesis are the average pLDDTs for the whole sequence.
 ### PDB structures
 
 The ones you want to look at will be `ranked_*.pdb`.
+
+
+# AlphaFold pulldown
+
+This library contains scripts to perform mass-multimerization using AlphaFold. To achieve this it is necessary to break down the modeling process into several steps:
+
+## 1. Make features (uses CPU nodes)
+
+This step will make the MSAs and look for structural templates, if needed. Afterwards it will make the necessary calculations and processing steps to convert this information into the features that are fed into AlphaFold Multimer. The command is as follows:
+
+```bash
+make_features --input [fasta_file] --destination [output_directory] --mail [your_email]
+```
+
+To see a detailed explanation of the parameters run `make_features --help`.
+
+This command will submit to ibex an array with up to `max_jobs` to calculate the features in parallel. Once all the jobs are finished (run `squeue -u [your_username]` to check), you can check the results by using the same command but adding the `--check_only` flag. This will print out any errors that might have occurred during the process. If there are no errors, you can proceed to the next step.
+
+```bash
+make_features --input [fasta_file] --destination [output_directory] --mail [your_email] --check_only
+```
+
+## 2. Make models (uses GPU nodes)
+
+The most common case for mass multimerization is to model one bait protein against many candidates (possibly an entire proteome). For this, the `make_models` command will take the features from the previous step and use them to make the models. The simplest way to run the command is as follows:
+
+```bash
+make_complexes --bait [fasta_file] --candidates [fasta_file] --features_dir [features_directory] --destination [output_directory] --mail [your_email]
+```
+
+This command will create two models for each complex in the `--destination` directory. If you are making more than a few hundred models, it is highly recommended to use the `--screen_mode` flag that will indicate the program to only save to disk the quality scores (iptm and ptm) to a text file. This will save a lot of disk space. Also use the `--models_to_relax none` parameter to skip the relaxation step and save time. The command would look like this:
+
+```bash
+make_complexes --bait [fasta_file] --candidates [fasta_file] --features_dir [features_directory] --destination [output_directory] --mail [your_email] --screen_mode --models_to_relax none
+```
+
+To see a detailed explanation of the parameters run `make_complexes --help`.
+
+This will submit to ibex an array with up to `max_jobs` to make the complexes in parallel (up to 24 will be running at the same time due to the max GPU per-user limitation in ibex). When there are no more jobs running, you can check the results by using the same command but adding the `--check_only` flag. This will print out any errors that might have occurred during the process. If there are no errors, you can proceed to the next step.
+
+```bash
+make_complexes --bait [fasta_file] --candidates [fasta_file] --features_dir [features_directory] --destination [output_directory] --mail [your_email] --check_only
+```
+
+## 3. Rank the models according to their quality scores (optional)
+
+If you used the `--screen_mode` flag when making the complexes, you now only have the quality scores for each model. Through the next steps you will rank the models according to their quality scores, select the best ones and re-make them with full outputs.
+
+```bash
+score_complexes --models_dir [directory_with_models]
+```
+
+Again, running `score_complexes --help` will give you more information.
+
+By default, this command will create a `scores` directory inside the `--models_dir` directory, with the following files:
+
+- `top_candidates.fasta` : The fasta file with the sequences of the top candidates, sorted by their quality scores.
+- `scores.csv` : The quality scores for every model.
+- `seeds.pkl` : The random seeds used to make the top models. This file will be used in the next step.
+- `iptms.png` : A box plot of the interface-ptm scores for every model.
+
+## 4. Re-make the top models with full outputs
+
+After you successfully ran the previous step, you can now run once again the `make_complexes` command but this time with the `--seeds` parameter to re-make the top models with full outputs, and also ommitting the `--screen_mode` flag.
+
+```bash
+make_complexes --bait [fasta_file] --candidates [path/to/top_candidates.fasta] --features_dir [features_directory] --destination [new_output_directory] --mail [your_email] --models_to_relax best --seeds [path/to/seeds.pkl]
+```
+
+After all the jobs are finished, run the same command but with the `--check_only` flag to make sure everything went well. If there are no errors, you have your top models!!. See the [Results](#results) section above to find more details about the outputs.
 
 
 # Updating AlphaFold

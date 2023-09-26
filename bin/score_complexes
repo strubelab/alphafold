@@ -85,7 +85,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         return n
 
     parser = argparse.ArgumentParser(description=('Reads all the quality scores'
-                'for the models in the given directory and ranks them. Outputs '
+                ' for the models in the given directory and ranks them. Outputs '
                 'are a table with the quality scores, a fasta file with the '
                 'best sequences and a text file with the random seeds for '
                 'making the complexes again.'))
@@ -103,7 +103,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Threshold for the iPTM score to select the best models '
               '(between 0 and 1). The candidate sequences for the models with '
               'a score above this number will be given in the outputs, along '
-              'with their random seeds.'),
+              'with their random seeds. Default=0.75'),
         type=validate_iptm, default=0.75)
  
     return parser.parse_args(args)
