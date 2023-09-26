@@ -192,8 +192,8 @@ if __name__ == '__main__':
                                             args.screen_mode,
                                             model_names,
                                             args.multimer_predictions_per_model)
-        logging.info(f'Found {len(modeled)} models for {len(sequences)} '
-                     'candidate sequences.')
+        logging.info(f'Found {len(modeled)} models for {len(completed)} '
+                     'pre-calculated features.')
     else:
         out_dir.mkdir()
         sequences_to_model = [s for s in sequences if get_id(s.id) in completed]
