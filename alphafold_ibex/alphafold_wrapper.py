@@ -359,8 +359,13 @@ class AlphaFold(Executor):
                                             process_outputs(features_files))
         
         # Read model ranking from 'ranking_debug.json'
-        with open(self.out_model/'ranking_debug.json', 'r') as f:
-            self.model_rank = json.load(f)['order']
+        rankings_file = self.out_model/'ranking_debug.json'
+        if rankings_file.exists():
+            with open(self.out_model/'ranking_debug.json', 'r') as f:
+                self.model_rank = json.load(f)['order']
+        else:
+            print("No rankings file found!!")
+            return
 
         
         if self.make_plots:
