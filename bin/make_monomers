@@ -130,6 +130,16 @@ def parsing(args: list=None) -> argparse.Namespace:
         "make the same model but with a different number of recycles. "
         "Make sure to copy the old results to a new directory if you don't "
         "want to overwrite them."), action='store_true')
+    
+    parser.add_argument("--get_quality_scores",
+        help=("If set, the quality scores will be extracted from the models "
+              "and saved to a file. The pickle files will be erased except for "
+              "the one with the highest score. Defaults to False."),
+        action='store_true')
+    
+    parser.add_argument("--jobname",
+        help=("Name of the job to submit to ibex. Defaults to 'AF_complexes'."),
+        default='AF_complexes')
  
     return parser.parse_args(args)
 
@@ -182,7 +192,7 @@ if __name__ == '__main__':
         
         # Run AlphaFold
         logging.info('Running AlphaFoldIbex...')
-        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname='AF_monomers',
+        exe = AlphafoldIbex(complexes, out_dir=out_dir, jobname=args.jobname,
                         models_to_relax=args.models_to_relax,
                         gpu_type=args.gpu_type,
                         mail=args.mail,
@@ -190,6 +200,7 @@ if __name__ == '__main__':
                         mem=args.mem,
                         recycles=args.recycles,
                         old_uniclust=args.old_uniclust,
-                        use_precomputed_msas=args.use_precomputed_msas)
+                        use_precomputed_msas=args.use_precomputed_msas,
+                        get_quality_scores=args.get_quality_scores)
 
         exe.run()
