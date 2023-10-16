@@ -136,6 +136,9 @@ if __name__ == '__main__':
     
     # Select top ligands
     select = highest_scores.iptms >= args.iptm_threshold
+
+    logging.info(f'Selected {sum(select)} complexes with iptm >= {args.iptm_threshold}')
+
     top_complexes = list(highest_scores[select].complex)
     top_ligands = list(highest_scores[select].complex.apply(
                    lambda x: re.search(r'_(\w+)-1$', x).group(1)))
