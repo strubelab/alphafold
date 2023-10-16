@@ -116,6 +116,8 @@ if __name__ == '__main__':
     
     if args.out_dir is None:
         out_dir = args.models_dir / "scores"
+        if not out_dir.exists():
+            out_dir.mkdir()
     else:
         out_dir = args.out_dir
         
