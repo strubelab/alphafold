@@ -253,7 +253,7 @@ if __name__ == '__main__':
         with open(args.seeds, 'rb') as f:
             seeds = pickle.load(f)
         
-        ids_to_model = [get_id(s) for s in sequences_to_model]
+        ids_to_model = [get_id(s.id) for s in sequences_to_model]
         seeds = [seeds[i] for i in ids_to_model]
     else:
         seeds = None
