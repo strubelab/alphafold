@@ -245,7 +245,8 @@ if __name__ == '__main__':
             print("None")
         else:
             error_files = get_errors(missing, out_dir)
-            exit(0)
+
+        exit(0)
 
     # Get random seeds if given
     if args.seeds is not None:
