@@ -17,6 +17,6 @@ dependencies:
   - pip:
     - -r requirements.txt
   - python=3.10.4
+  - seaborn
   - scikit-learn
   - scipy
-
