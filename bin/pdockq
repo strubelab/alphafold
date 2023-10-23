@@ -128,9 +128,9 @@ if __name__ == '__main__':
     
     # Select top ligands
     select = highest_scores.iptms >= args.iptm_threshold
-    highest_scores = highest_scores[select]
+    # highest_scores = highest_scores[select]
 
-    logging.info(f'Selected {sum(select)} complexes with iptm >= {args.iptm_threshold}')
+    logging.info(f'{sum(select)} complexes with iptm >= {args.iptm_threshold}')
 
     logging.info(f'Calculating pDockQ scores...')
     
