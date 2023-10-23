@@ -30,7 +30,7 @@ def plot_pdockq(highest_scores:pd.DataFrame, out_dir:Path):
 
     ax = sns.stripplot(data=highest_scores, y='pdockq')
 
-    plt.suptitle('pDockQ scores of top {len(highest_scores)} complexes')
+    plt.suptitle(f'pDockQ scores of top {len(highest_scores)} complexes')
 
     # fig.tight_layout()
     plt.savefig(out_dir/'pdockq.png', bbox_inches='tight')
