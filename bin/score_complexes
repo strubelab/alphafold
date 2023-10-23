@@ -40,7 +40,8 @@ def plot_iptms(highest_scores:pd.DataFrame, out_dir:Path,
 
     # fig.tight_layout()
     plt.savefig(out_dir/'iptms.png', bbox_inches='tight')
-    plt.show()
+    # plt.show()
+    plt.close()
 
 
 def parsing(args: list=None) -> argparse.Namespace:
