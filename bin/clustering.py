@@ -120,7 +120,7 @@ def run_sequence_clustering(candidates_file:Path, results_prefix:str="clusterRes
     
     command = (f"mmseqs easy-cluster {candidates_file} {results_prefix} {temp_dir} "
                f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
-               f"--sensitivity {sensitivity}").split()
+               f"-s {sensitivity}").split()
     
     p = subprocess.run(command, cwd=destination)
 
@@ -290,5 +290,14 @@ if __name__ == '__main__':
     
     logging.info("Making Pymol sessions...")
     make_pymol_sessions(clusters, args.destination)
+    
+    logging.info("Adding quality scores to the clusters...")
+    pdockq = pd.read_csv(args.models_dir / "scores/scores_pdockq.csv")
+    pdockq['binder'] = pdockq.complex.str.split('_').str[1].str[:-2]
+    scores_clusters = pdockq.merge(clusters, how='left', left_on='binder',
+                                   right_on='member')
+    
+    logging.info("Saving results...")
+    scores_clusters.to_csv(args.destination / "scores_clusters.csv", index=False)
     
     logging.info("Done!!")
