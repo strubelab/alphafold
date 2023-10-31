@@ -199,7 +199,7 @@ def copy_pdbs(clusters:pd.DataFrame, models_dir:Path, destination:Path) -> None:
     for i, cluster in enumerate(top10.index):
         # Get cluster members
         members = clusters[clusters.rep == cluster].member.values
-        cluster_dir = destination / f"cluster{i}_{cluster}"
+        cluster_dir = destination / f"cluster{i+1}_{cluster}"
         cluster_dir.mkdir()
         for member in members:
             # Traverse the models directory to find the member
@@ -219,7 +219,7 @@ def make_pymol_sessions(clusters:pd.DataFrame, destination:Path):
     for i, cluster in enumerate(top10.index):
         # Get cluster members
         members = clusters[clusters.rep == cluster].member.values
-        cluster_dir = destination / f"cluster{i}_{cluster}"
+        cluster_dir = destination / f"cluster{i+1}_{cluster}"
         
         # Load the cluster representative first
         if re.search(r'.pdb_[AB]$', cluster):
