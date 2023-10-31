@@ -169,7 +169,7 @@ def get_top_pdbs(models_dir:Path, destination:Path):
             if top_pdb.exists():
                 count += 1
                 # Copy top pdb to new destination
-                uid = re.search(r'-1_(\w+)-1.pdb', d.name).group(1)
+                uid = re.search(r'-1_(\w+)-1', d.name).group(1)
                 new_name = pdbs_dir / (uid + ".pdb")
                 shutil.copy(top_pdb, new_name)
                 
