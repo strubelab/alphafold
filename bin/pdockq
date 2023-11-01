@@ -15,6 +15,7 @@ from alphafold_ibex.utils_complexes import get_seeds, get_scores
 from alphafold_ibex.scoring_functions import obtain_mpdockq
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 import pandas as pd
 import pickle
 from Bio import SeqIO
@@ -136,7 +137,11 @@ if __name__ == '__main__':
     
     pdock_scores = {}
     for c in highest_scores.complex:
-        pdock_scores[c] = obtain_mpdockq(args.models_dir / c)
+        try:
+            pdock_scores[c] = obtain_mpdockq(args.models_dir / c)
+        except IndexError:
+            logging.warning(f'Could not calculate pDockQ for {c}')
+            pdock_scores[c] = (np.nan, np.nan, np.nan)
     
     # Create a DataFrame from the `pdock_scores` dictionary, with the index being the
     # complex name and the columns being the values of the dictionary
