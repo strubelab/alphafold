@@ -160,7 +160,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=("Which of the AlphaFold models to run. Choose 'all' to make all five"
               " models, 'two' to make only two models with different parameters"
               ", or give the name(s) of the specific model(s) that you want to "
-              "run separated by spaces. Default = 'two'."), nargs='+')
+              "run separated by spaces. Default = 'two'."), nargs='+', default='two')
     
     parser.add_argument("--multimer_predictions_per_model", help=('Number of '
         'multimeric predictions to make for each of the ML models that '
