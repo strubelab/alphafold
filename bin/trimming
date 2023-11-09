@@ -69,9 +69,8 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=validate_dir, required=True)
     
     parser.add_argument("--out_dir",
-        help=('Path where the outputs will be saved. Defaults to a `scores` '
-              'director inside of `models_dir`.'), type=validate_out,
-        default=None)
+        help=('Path where the outputs will be saved.'), type=validate_out,
+        default=None, required=True)
     
     parser.add_argument("--pae_threshold",
         help=('Threshold for the PAE score to select the region of the binder'
@@ -158,7 +157,7 @@ def extract_pdb_region(pdb:Path, leftind:int, rightind:int, destination:Path
 if __name__ == "__main__":
     
     args = parsing()
-    pdbs_dir = args.destination / "pdbs_trimmed"
+    pdbs_dir = args.out_dir / "pdbs_trimmed"
     
     trimmed_candidates = []
     candidates_regions = []
@@ -192,9 +191,9 @@ if __name__ == "__main__":
     logging.info(f"Processed {count} complexes.")
     
     logging.info("Writing trimmed sequences to fasta file.")
-    SeqIO.write(trimmed_candidates, args.destination / "trimmed_candidates.fasta",
+    SeqIO.write(trimmed_candidates, args.out_dir / "trimmed_candidates.fasta",
                 'fasta')
     
     # Write the regions of the candidates to a file
     pd.DataFrame(candidates_regions, columns=['id', 'left', 'right']).to_csv(
-        args.destination / "candidates_regions.csv", index=False)
+        args.out_dir / "candidates_regions.csv", index=False)
