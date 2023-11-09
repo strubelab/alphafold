@@ -65,7 +65,7 @@ def parsing(args: list=None) -> argparse.Namespace:
                 'the bait.'))
 
     parser.add_argument("--models_dir", 
-        help=('Path where the quality scores of the models are saved.'),
+        help=('Path where the models with full outputs are saved.'),
         type=validate_dir, required=True)
     
     parser.add_argument("--out_dir",
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     
     count = 0
     for d in args.models_dir.iterdir():
-        if d.isdir():
+        if d.is_dir():
             top_pdb = d / "ranked_0.pdb"
             if top_pdb.exists():
                 count += 1
