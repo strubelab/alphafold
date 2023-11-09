@@ -192,7 +192,8 @@ def copy_pdbs(clusters:pd.DataFrame, models_dir:Path, destination:Path) -> None:
         destination (Path): Path to the directory where the pdbs will be copied
     """
     
-    top10 = clusters.merged_rep.value_counts().sort_values(ascending=False).head(10)
+    top10 = (clusters.groupby('merged_rep').agg({'iptms': 'mean', 'binder': 'count'})
+             .sort_values(by=['binder', 'iptms'], ascending=False).head(10))
     
     for i, cluster in enumerate(top10.index):
         # Get cluster members
@@ -212,7 +213,8 @@ def copy_pdbs(clusters:pd.DataFrame, models_dir:Path, destination:Path) -> None:
 
 def make_pymol_sessions(clusters:pd.DataFrame, destination:Path):
     
-    top10 = clusters.merged_rep.value_counts().sort_values(ascending=False).head(10)
+    top10 = (clusters.groupby('merged_rep').agg({'iptms': 'mean', 'binder': 'count'})
+             .sort_values(by=['binder', 'iptms'], ascending=False).head(10))
     
     for i, cluster in enumerate(top10.index):
         # Get cluster members
@@ -300,6 +302,8 @@ def merge_dict_values(unmerged_dict:Dict[str, Set[str]]) -> Dict[str, Set[str]]:
         merged_members = set()
         keys_to_merge = []
         for rep2, members2 in unmerged_dict.items():
+            if members2 is None:
+                continue
             if not members.isdisjoint(members2):    # if they have elements in common
                 merged_members = merged_members | members | members2
                 keys_to_merge.append(rep2)
@@ -357,6 +361,7 @@ if __name__ == '__main__':
     
     # Sequence clustering
     out_seqcluster = args.destination / "seqclusters"
+    out_seqcluster.mkdir()
     logging.info("Running clustering...")
     run_sequence_clustering(args.candidates, "clusterRes", "tmp", args.min_seq_id,
                 args.coverage, args.cov_mode, args.sensitivity, out_seqcluster)
@@ -367,6 +372,7 @@ if __name__ == '__main__':
     
     # Structure clustering
     out_strcluster = args.destination / "strclusters"
+    out_strcluster.mkdir()
     logging.info("Copying models to new directory...")
     pdbs_dir = get_top_pdbs(args.models_dir, out_strcluster)
     
@@ -384,7 +390,18 @@ if __name__ == '__main__':
         logging.info("NOT ALL REPRESENTATIVES COME FROM CHAIN B")
     # Remove the '.pdb_B' suffix from the members' names
     strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
-    
+
+    # Add quality scores to the clusters
+    logging.info("Adding quality scores to the clusters...")
+    pdockq = pd.read_csv(args.models_dir / "scores/scores_pdockq.csv")
+    pdockq['binder'] = pdockq.complex.str.split('_').str[1].str[:-2]
+
+    strclusters = pdockq.merge(strclusters, how='left', left_on='binder',
+                                right_on='member')
+
+    seqclusters = pdockq.merge(seqclusters, how='left', left_on='binder',
+                                right_on='member')
+
     # Joint clustering
     joint_clusters = joint_cluster(seqclusters, strclusters)
     
@@ -400,28 +417,24 @@ if __name__ == '__main__':
     strclusters['seq_rep'] = seqclusters.seq_rep
     
     # Initialize a new column `merged_rep`
-    strclusters['merged_rep'] = np.nan
+    strclusters['merged_rep'] = None
     
     # Iterate over joint_clusters and change the values of the `merged_rep` column
     # in the `strclusters` dataframe
     for rep, members in joint_clusters.items():
         strclusters.loc[strclusters.member.isin(members), 'merged_rep'] = rep
+
+    strclusters.fillna(np.nan, inplace=True)
     
     # Copy pdbs from the top clusters
     out_merged = args.destination / "merged_clusters"
+    out_merged.mkdir()
     logging.info("Copying pdbs from the top clusters...")
     copy_pdbs(strclusters, args.models_dir, out_merged)
     
     logging.info("Making Pymol sessions...")
     make_pymol_sessions(strclusters, out_merged)
 
-    # Add quality scores to the clusters
-    logging.info("Adding quality scores to the clusters...")
-    pdockq = pd.read_csv(args.models_dir / "scores/scores_pdockq.csv")
-    pdockq['binder'] = pdockq.complex.str.split('_').str[1].str[:-2]
-
-    strclusters_scores = pdockq.merge(strclusters, how='left', left_on='binder',
-                                right_on='member')
-    strclusters_scores.to_csv(out_merged / "scores_clusters.csv", index=False)
+    strclusters.to_csv(out_merged / "scores_clusters.csv")
 
     logging.info("Done!!")
