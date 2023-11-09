@@ -60,11 +60,9 @@ def parsing(args: list=None) -> argparse.Namespace:
             raise ValueError("The PAE threshold must be between 0 and 30.")
         return n
 
-    parser = argparse.ArgumentParser(description=('Reads all the quality scores'
-                ' for the models in the given directory and ranks them. Outputs '
-                'are a table with the quality scores, a fasta file with the '
-                'best sequences and a text file with the random seeds for '
-                'making the complexes again.'))
+    parser = argparse.ArgumentParser(description=('Extracts the regions'
+                ' of the candidate models that have a high PAE score against '
+                'the bait.'))
 
     parser.add_argument("--models_dir", 
         help=('Path where the quality scores of the models are saved.'),
