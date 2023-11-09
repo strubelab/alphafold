@@ -66,13 +66,16 @@ def parsing(args: list=None) -> argparse.Namespace:
         'plots to other directories.'))
     
     parser.add_argument("--models_dir", 
-        help=('Path with the resulting AlphaFold models. Required if --kind=sequence.'),
+        help=('Path with the resulting AlphaFold models.'), required=True,
         type=validate_dir)
     
     parser.add_argument("--candidates", 
-        help=('If --kind=sequence, this should be a FASTA file with the candidates'
-              ' to be clustered.'),
+        help=('FASTA file with the sequences to be clustered.'), required=True,
         type=Path)
+    
+    parser.add_argument("--get_top_models",
+        help=("Whether to copy first the top models to a new directory."),
+        action='store_true')
     
     parser.add_argument("--destination",
         help=("Path to save the results from clustering, as well as the "
@@ -181,14 +184,14 @@ def get_top_pdbs(models_dir:Path, destination:Path):
     return pdbs_dir
 
 
-def copy_pdbs(clusters:pd.DataFrame, models_dir:Path, destination:Path) -> None:
+def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path) -> None:
     """
     Copy the top pdbs from the top clusters to a new directory
     
     Args:
         clusters (pd.DataFrame): DataFrame with the cluster representatives and
             members
-        models_dir (Path): Path to the directory with the models
+        pdbs_dir (Path): Path to the directory with the models
         destination (Path): Path to the directory where the pdbs will be copied
     """
     
@@ -201,14 +204,10 @@ def copy_pdbs(clusters:pd.DataFrame, models_dir:Path, destination:Path) -> None:
         cluster_dir = destination / f"cluster{i+1}_{cluster}"
         cluster_dir.mkdir()
         for member in members:
-            # Traverse the models directory to find the member
-            for d in models_dir.iterdir():
-                if d.is_dir():
-                    if member in d.name:
-                        # Copy top pdb to new destination
-                        new_name = cluster_dir / (member + ".pdb")
-                        shutil.copy(d / "ranked_0.pdb", new_name)
-                        break
+            pdb_name = pdbs_dir / (member + ".pdb")
+            assert pdb_name.exists(), f"{pdb_name} doesn't exist"
+            new_name = cluster_dir / (member + ".pdb")
+            shutil.copy(pdb_name, new_name)
 
 
 def make_pymol_sessions(clusters:pd.DataFrame, destination:Path):
@@ -365,7 +364,7 @@ if __name__ == '__main__':
     logging.info("Running clustering...")
     run_sequence_clustering(args.candidates, "clusterRes", "tmp", args.min_seq_id,
                 args.coverage, args.cov_mode, args.sensitivity, out_seqcluster)
-    
+
     logging.info("Processing output...")
     seqclusters_tsv = out_seqcluster / "clusterRes_cluster.tsv"
     seqclusters = pd.read_table(seqclusters_tsv, header=None, names=["rep", "member"])
@@ -373,9 +372,13 @@ if __name__ == '__main__':
     # Structure clustering
     out_strcluster = args.destination / "strclusters"
     out_strcluster.mkdir()
-    logging.info("Copying models to new directory...")
-    pdbs_dir = get_top_pdbs(args.models_dir, out_strcluster)
-    
+
+    if args.get_top_models:
+        logging.info("Copying models to new directory...")
+        pdbs_dir = get_top_pdbs(args.models_dir, out_strcluster)
+    else:
+        pdbs_dir = args.models_dir
+
     logging.info("Running strcutural clustering...")
     run_structure_clustering(pdbs_dir, "clusterRes", "tmp", args.coverage,
                                 args.cov_mode, args.evalue, out_strcluster)
@@ -430,7 +433,7 @@ if __name__ == '__main__':
     out_merged = args.destination / "merged_clusters"
     out_merged.mkdir()
     logging.info("Copying pdbs from the top clusters...")
-    copy_pdbs(strclusters, args.models_dir, out_merged)
+    copy_pdbs(strclusters, pdbs_dir, out_merged)
     
     logging.info("Making Pymol sessions...")
     make_pymol_sessions(strclusters, out_merged)
