@@ -69,13 +69,14 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Path with the resulting AlphaFold models.'), required=True,
         type=validate_dir)
     
+    parser.add_argument("--top_models_dir",
+        help=("Path with the top models for each complex. If this is given, "
+              "the top models will NOT be copied to a new directory."),
+        type=validate_dir, default=None)
+    
     parser.add_argument("--candidates", 
         help=('FASTA file with the sequences to be clustered.'), required=True,
         type=Path)
-    
-    parser.add_argument("--get_top_models",
-        help=("Whether to copy first the top models to a new directory."),
-        action='store_true')
     
     parser.add_argument("--destination",
         help=("Path to save the results from clustering, as well as the "
@@ -373,11 +374,11 @@ if __name__ == '__main__':
     out_strcluster = args.destination / "strclusters"
     out_strcluster.mkdir()
 
-    if args.get_top_models:
+    if args.top_models_dir is None:
         logging.info("Copying models to new directory...")
         pdbs_dir = get_top_pdbs(args.models_dir, out_strcluster)
     else:
-        pdbs_dir = args.models_dir
+        pdbs_dir = args.top_models_dir
 
     logging.info("Running strcutural clustering...")
     run_structure_clustering(pdbs_dir, "clusterRes", "tmp", args.coverage,
