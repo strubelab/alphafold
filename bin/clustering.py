@@ -143,7 +143,7 @@ def run_sequence_clustering(destination:Path, candidates_file:Path,
                f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
                f"-s {sensitivity}").split()
     
-    p = subprocess.run(command, cwd=out_seqcluster)
+    p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
 
     logging.info("Processing output...")
     seqclusters_tsv = out_seqcluster / "clusterRes_cluster.tsv"
@@ -183,7 +183,7 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
                f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
     
-    p = subprocess.run(command, cwd=out_strcluster)
+    p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
     
     logging.info("Processing output...")
     strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
@@ -339,8 +339,8 @@ def merge_chains(pdbs_dir:Path, destination:Path):
     for pdb in pdbs:
         
         m = b.PDBModel(os.fspath(pdb))
-        len_a = len(m.takeChains([0]).atom2resProfile('residue_number'))
         try:
+            len_a = len(m.takeChains([0]).atom2resProfile('residue_number'))
             chainb = m.takeChains([1])
         except:
             print(pdb)
@@ -375,10 +375,16 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
     aligned_dfs = []
     for i, cluster in enumerate(topclusters.index):
 
+        logging.info(f"Clustering {cluster}")
+
         members = clusters[clusters.merged_rep == cluster].member.values
         cluster_dir = destination / f"cluster{i+1}_{cluster}"
         cluster_merged = destination / f"cluster{i+1}_{cluster}_merged"
+        if not cluster_merged.exists():
+            cluster_merged.mkdir()
         cluster_clusters_dir = destination / f"cluster{i+1}_{cluster}_clusters"
+        if not cluster_clusters_dir.exists():
+            cluster_clusters_dir.mkdir()
         
         # Merge the chains
         logging.info(f"Merging chains for cluster {cluster_dir.name}...")
@@ -388,13 +394,15 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
         strclusters, pdbs_dir = run_structure_clustering(
                                     destination=cluster_clusters_dir,
                                     top_models_dir=cluster_merged)
-        
+        strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
+        strclusters['rep'] = strclusters['rep'].str.split('.pdb').str[0] 
         # This is the ID of the largest cluster representative
         # It will be used to align all the members of the supercluster
         largest_rep = strclusters.rep.value_counts().index[0]
         
         ## use us-align to align all the members of the supercluster
         ## to the largest cluster representative
+        logging.info("Aligning members to cluster representative...")
         aligned_scores = []
         for m in members:
             subcluster_rep = strclusters[strclusters.member == m].rep.values[0]
@@ -591,7 +599,10 @@ if __name__ == '__main__':
     
     strclusters.to_csv(out_merged / "scores_clusters.csv")
 
+    logging.info("Clustering clusters...")
     
     alignment_scores = cluster_clusters(strclusters, out_merged, topclusters)
     
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
+
+    logging.info("Done!!")
