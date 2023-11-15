@@ -14,11 +14,13 @@ from pathlib import Path
 import shutil
 import subprocess
 import re
+import os
 from pymol import cmd
 from typing import Dict, Set, Union, Tuple
 
 import pandas as pd
 import numpy as np
+import biskit as b
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -149,7 +151,7 @@ def run_sequence_clustering(destination:Path, candidates_file:Path,
     
 
 def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
-                    models_dir:Path, results_prefix:str="clusterRes",
+                    models_dir:Path=None, results_prefix:str="clusterRes",
                     temp_dir:str="tmp", coverage:float=0.8, cov_mode:int=2,
                     evalue:float=0.01) -> Tuple[pd.DataFrame, Path]:
     """
@@ -184,13 +186,6 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     logging.info("Processing output...")
     strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
     strclusters = pd.read_table(strclusters_tsv, header=None, names=["rep", "member"])
-    # Get only the clusters for the structures of the binder
-    strclusters = strclusters[strclusters.member.str.endswith('_B')]
-    # See if all the representatives also come from chain B
-    if not all(strclusters.rep.str.endswith('_B')):
-        logging.info("NOT ALL REPRESENTATIVES COME FROM CHAIN B")
-    # Remove the '.pdb_B' suffix from the members' names
-    strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
 
     return strclusters, pdbs_dir
 
@@ -257,8 +252,8 @@ def get_top_pdbs(models_dir:Path, destination:Path):
     return pdbs_dir
 
 
-def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path, top_n:int
-              ) -> None:
+def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path,
+              topclusters:pd.DataFrame) -> None:
     """
     Copy the top pdbs from the top clusters to a new directory
     
@@ -269,11 +264,6 @@ def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path, top_n:int
         destination (Path): Path to the directory where the pdbs will be copied
         top_n (int): Number of top clusters to copy
     """
-    
-    topclusters = (clusters.groupby('merged_rep')
-                   .agg({'iptms': 'mean', 'binder': 'count'})
-                   .sort_values(by=['binder', 'iptms'], ascending=False)
-                   .head(top_n))
     
     for i, cluster in enumerate(topclusters.index):
         # Get cluster members
@@ -287,33 +277,16 @@ def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path, top_n:int
             shutil.copy(pdb_name, new_name)
 
 
-def copy_merged_clusters(destination:Path, pdbs_dir:Path,
-                         strclusters:pd.DataFrame, top_n:int=10):
+def make_pymol_sessions(clusters:pd.DataFrame, destination:Path,
+                        topclusters:pd.DataFrame) -> None:
     """
-    Copy the pdbs from the top clusters to a new directory, make pymol sessions
-    and write the scores to a csv file.
+    Create the pymol session with the superimposition of each of the clusters
 
     Args:
-        destination (Path): Output directory
-        pdbs_dir (Path): Path to the directory with the PDBs
-        strclusters (pd.DataFrame): DataFrame with the structural clusters
-        top_n (int, optional): Number of top clusters to copy. Defaults to 10.
+        clusters (pd.DataFrame): DataFrame with the clustering results
+        destination (Path): Path to the directory with the pdbs for each cluster
+        topclusters (pd.DataFrame): DataFrame with the top clusters
     """
-    out_merged = destination / "merged_clusters"
-    out_merged.mkdir()
-    logging.info("Copying pdbs from the top clusters...")
-    copy_pdbs(strclusters, pdbs_dir, out_merged, top_n)
-    
-    logging.info("Making Pymol sessions...")
-    make_pymol_sessions(strclusters, out_merged)
-    
-    strclusters.to_csv(out_merged / "scores_clusters.csv")
-
-
-def make_pymol_sessions(clusters:pd.DataFrame, destination:Path, top_n:int):
-    
-    topclusters = (clusters.groupby('merged_rep').agg({'iptms': 'mean', 'binder': 'count'})
-             .sort_values(by=['binder', 'iptms'], ascending=False).head(top_n))
     
     for i, cluster in enumerate(topclusters.index):
         # Get cluster members
@@ -348,6 +321,76 @@ def make_pymol_sessions(clusters:pd.DataFrame, destination:Path, top_n:int):
         
         cmd.save(cluster_dir / "session.pse")
         cmd.do('delete all')
+
+
+def merge_chains(pdbs_dir:Path, destination:Path):
+    """
+    Merge the chains of a PDB into a single chain and write it to the destination
+
+    Args:
+        pdbs_dir (Path): Directory with the PDBs to merge
+    """
+    
+    pdbs = pdbs_dir.glob("*.pdb")
+    
+    count=0
+    for pdb in pdbs:
+        
+        m = b.PDBModel(os.fspath(pdb))
+        len_a = len(m.takeChains([0]).atom2resProfile('residue_number'))
+        try:
+            chainb = m.takeChains([1])
+        except:
+            print(pdb)
+            raise
+        chainb.renumberResidues(start=len_a+31)
+        m2 = m.takeChains([0]).concat(chainb)
+        m2.mergeChains(0, renumberResidues=False)
+        
+        new_name = destination / (pdb.name)
+        m2.writePdb(os.fspath(new_name))
+        
+        count += 1
+
+    logging.info(f"Processed {count} models.")
+    
+
+
+def cluster_clusters(clusters:pd.DataFrame, destination:Path,
+                     topclusters:pd.DataFrame):
+    """
+    For each cluster:
+    1. Merge the chains of each PDB in the cluster
+    2. Do structural clustering
+    3. Identify the cluster of largest size
+    
+    Args:
+        clusters (pd.DataFrame): DataFrame with the cluster representatives and
+            members
+        destination (Path): Path to the directory with the pdbs for each cluster
+        topclusters (pd.DataFrame): DataFrame with the top clusters
+    """
+    for i, cluster in enumerate(topclusters.index):
+        # Get cluster members
+        members = clusters[clusters.merged_rep == cluster].member.values
+        cluster_dir = destination / f"cluster{i+1}_{cluster}"
+        cluster_merged = destination / f"cluster{i+1}_{cluster}_merged"
+        cluster_clusters_dir = destination / f"cluster{i+1}_{cluster}_clusters"
+        
+        # Merge the chains
+        logging.info(f"Merging chains for cluster {cluster_dir.name}...")
+        merge_chains(cluster_dir, cluster_merged)
+        
+        # Do structural clustering on the merged chains
+        strcluster, pdbs_dir = run_structure_clustering(
+                                    destination=cluster_clusters_dir,
+                                    top_models_dir=cluster_merged)
+        
+        largest_cluster = strcluster.rep.value_counts().index[0]
+        
+        ###### TO DO: USE US-ALIGN TO ALIGN ALL THE MEMBERS OF THE SUPERCLUSTER
+        ###### TO THE REPRESENTATIVE OF THE LARGEST SUBCLUSTER
+        
 
 
 def get_topcluster_members(clusters:pd.DataFrame, min_count:int=2) -> Dict[str, Set[str]]:
@@ -497,12 +540,32 @@ if __name__ == '__main__':
                         coverage=args.coverage, cov_mode=args.cov_mode,
                         evalue=args.evalue)
     
+    # Get only the clusters for the structures of the binder
+    strclusters = strclusters[strclusters.member.str.endswith('_B')]
+    # See if all the representatives also come from chain B
+    if not all(strclusters.rep.str.endswith('_B')):
+        logging.info("NOT ALL REPRESENTATIVES COME FROM CHAIN B")
+    # Remove the '.pdb_B' suffix from the members' names
+    strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
+    
+    
     strclusters, seqclusters = add_quality_scores(strclusters, seqclusters,
                                                   args.models_dir)
     
     strclusters = joint_clusters_df(seqclusters, strclusters)
 
 
-    # Copy pdbs from the top clusters and make pymol sessions
-    copy_merged_clusters(args.destination, pdbs_dir, strclusters, args.top_n)
+    out_merged = args.destination / "merged_clusters"
+    out_merged.mkdir()
+    topclusters = (strclusters.groupby('merged_rep')
+                   .agg({'iptms': 'mean', 'binder': 'count'})
+                   .sort_values(by=['binder', 'iptms'], ascending=False)
+                   .head(args.top_n))
+    logging.info("Copying pdbs from the top clusters...")
+    copy_pdbs(strclusters, pdbs_dir, out_merged, topclusters)
     
+    logging.info("Making Pymol sessions...")
+    make_pymol_sessions(strclusters, out_merged, topclusters)
+    
+    strclusters.to_csv(out_merged / "scores_clusters.csv")
+
