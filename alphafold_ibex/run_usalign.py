@@ -30,3 +30,28 @@ GPAPARFCVYYDGHLPATRVLLMYVRIGTTATITARGHEFEVEAKDQNCKVILTNGKQAPDWLAAEPY*-----------
 #Total CPU time is  0.21 seconds
 
 """
+
+import re
+import subprocess
+from pathlib import Path
+from typing import Tuple
+
+
+def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float]:
+    """
+    Do a structural alignment of pdb1 onto pdb2 and calculate the TM-score,
+    RMSD and the aligned length.
+    """
+    
+    command = (f"USalign {model} {native} -mol prot -mm 1 -ter 1").split()
+    p = subprocess.run(command, capture_output=True)
+    output_lines = p.stdout.decode().split("\n")
+    
+    aligned_length = int(re.search(r"Aligned length=\s+(\d+),", output_lines[13]
+                                   ).group(1))
+    rmsd = float(re.search(r"RMSD=\s+(\d+\.\d+),",output_lines[13]
+                           ).group(1))
+    tm_score = float(re.search(r"^TM-score=\s+(\d+\.\d+)", output_lines[15]
+                               ).group(1))
+    
+    return aligned_length, rmsd, tm_score

@@ -25,6 +25,8 @@ import biskit as b
 import logging
 logging.getLogger().setLevel(logging.INFO)
 
+from alphafold_ibex.run_usalign import calculate_tmscore
+
 def parsing(args: list=None) -> argparse.Namespace:
     """
     Creates the argument parser instance and applies it to the command line
@@ -353,7 +355,6 @@ def merge_chains(pdbs_dir:Path, destination:Path):
         count += 1
 
     logging.info(f"Processed {count} models.")
-    
 
 
 def cluster_clusters(clusters:pd.DataFrame, destination:Path,
@@ -361,8 +362,9 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
     """
     For each cluster:
     1. Merge the chains of each PDB in the cluster
-    2. Do structural clustering
-    3. Identify the cluster of largest size
+    2. Do structural clustering to identify the "consensus" structure of the cluster
+    3. Use us-align to align all the members of the cluster to the consensus structure
+    4. Save the alignment scores in a DataFrame
     
     Args:
         clusters (pd.DataFrame): DataFrame with the cluster representatives and
@@ -370,8 +372,9 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
         destination (Path): Path to the directory with the pdbs for each cluster
         topclusters (pd.DataFrame): DataFrame with the top clusters
     """
+    aligned_dfs = []
     for i, cluster in enumerate(topclusters.index):
-        # Get cluster members
+
         members = clusters[clusters.merged_rep == cluster].member.values
         cluster_dir = destination / f"cluster{i+1}_{cluster}"
         cluster_merged = destination / f"cluster{i+1}_{cluster}_merged"
@@ -382,15 +385,33 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
         merge_chains(cluster_dir, cluster_merged)
         
         # Do structural clustering on the merged chains
-        strcluster, pdbs_dir = run_structure_clustering(
+        strclusters, pdbs_dir = run_structure_clustering(
                                     destination=cluster_clusters_dir,
                                     top_models_dir=cluster_merged)
         
-        largest_cluster = strcluster.rep.value_counts().index[0]
+        # This is the ID of the largest cluster representative
+        # It will be used to align all the members of the supercluster
+        largest_rep = strclusters.rep.value_counts().index[0]
         
-        ###### TO DO: USE US-ALIGN TO ALIGN ALL THE MEMBERS OF THE SUPERCLUSTER
-        ###### TO THE REPRESENTATIVE OF THE LARGEST SUBCLUSTER
+        ## use us-align to align all the members of the supercluster
+        ## to the largest cluster representative
+        aligned_scores = []
+        for m in members:
+            subcluster_rep = strclusters[strclusters.member == m].rep.values[0]
+            m_path = cluster_dir / (m + ".pdb")
+            rep_path = cluster_dir / (largest_rep + ".pdb")
+            aligned_length, rmsd, tmscore = calculate_tmscore(m_path, rep_path)
+            aligned_scores.append((cluster, largest_rep, m, aligned_length,
+                                    rmsd, tmscore, subcluster_rep))
         
+        # Make dataframe
+        columns = ['cluster', 'rep_align', 'member', 'aligned_length', 'rmsd',
+                     'tmscore', 'subcluster_rep']
+        aligned_df = pd.DataFrame(aligned_scores, columns=columns)
+        
+        aligned_dfs.append(aligned_df)
+    
+    return pd.concat(aligned_dfs)
 
 
 def get_topcluster_members(clusters:pd.DataFrame, min_count:int=2) -> Dict[str, Set[str]]:
@@ -554,7 +575,8 @@ if __name__ == '__main__':
     
     strclusters = joint_clusters_df(seqclusters, strclusters)
 
-
+    # Copy the pdbs from the top clsuters to a new directory
+    # and make pymol sessions for the top clusters
     out_merged = args.destination / "merged_clusters"
     out_merged.mkdir()
     topclusters = (strclusters.groupby('merged_rep')
@@ -569,3 +591,7 @@ if __name__ == '__main__':
     
     strclusters.to_csv(out_merged / "scores_clusters.csv")
 
+    
+    alignment_scores = cluster_clusters(strclusters, out_merged, topclusters)
+    
+    alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
