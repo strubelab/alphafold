@@ -213,7 +213,7 @@ if __name__ == '__main__':
     
     # Save command to output dir
     with open(out_dir/'command.txt', 'w') as f:
-        f.write(' '.join(sys.argv))
+        f.write(' '.join(sys.argv)+'\n')
 
     exe = AlphafoldIbex(sequences, out_dir=out_dir, recycles=args.recycles,
                     mem=args.mem, time_per_command=args.time, gpus=args.gpus,
