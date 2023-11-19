@@ -3,7 +3,7 @@ Functions to run the US-align algorithm.
 
 Example command adn output:
 
-(base) login510-22:/ibex/user/guzmanfj/py/usalign/test$ ../lib/USalign Q7EY69.pdb Q6YPG3.pdb -mol prot -mm 1 -ter 1
+(base) login510-22:/ibex/user/guzmanfj/py/usalign/test$ USalign Q5JL91.pdb A0A0N7KFK3.pdb -TMscore 7 -ter 1
 
  ********************************************************************
  * US-align (Version 20230609)                                      *
@@ -12,22 +12,22 @@ Example command adn output:
  * Please email comments and suggestions to zhang@zhanggroup.org    *
  ********************************************************************
 
-Name of Structure_1: Q7EY69.pdb:A:B (to be superimposed onto Structure_2)
-Name of Structure_2: Q6YPG3.pdb:A:B
-Length of Structure_1: 159 residues
-Length of Structure_2: 187 residues
+Name of Structure_1: Q5JL91.pdb:A:B (to be superimposed onto Structure_2)
+Name of Structure_2: A0A0N7KFK3.pdb:A:B
+Length of Structure_1: 168 residues
+Length of Structure_2: 188 residues
 
-Aligned length= 109, RMSD=   4.01, Seq_ID=n_identical/n_aligned= 0.624
-TM-score= 0.51979 (normalized by length of Structure_1: L=159, d0=4.70)
-TM-score= 0.45008 (normalized by length of Structure_2: L=187, d0=5.10)
+Aligned length= 164, RMSD=  18.48, Seq_ID=n_identical/n_aligned= 0.683
+TM-score= 0.51426 (normalized by length of Structure_1: L=168, d0=4.83)
+TM-score= 0.46125 (normalized by length of Structure_2: L=188, d0=5.11)
 (You should use TM-score normalized by length of the reference structure)
 
 (":" denotes residue pairs of d < 5.0 Angstrom, "." denotes other aligned residues)
-GPAPARFCVYYDGHLPATRVLLMYVRIGTTATITARGHEFEVEAKDQNCKVILTNGKQAPDWLAAEPY*MAASGIETGTKLY---------------ISNLD----------YGVSNEDIK-ELFSEVGHLKRFAVHFDGYGRP----------NG-TAEVVFTRRSDAIAALKRYNNVLLDGKA----------------MKI-EVIGSDLGL------------------------*
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*                            .:..           ...:..:.  .:.  .    ....                  .  ...            . .:.:::..::.                ... ..                               *
-GPAPARFCVYYDGHLPATRVLLMYVRIGTTATITARGHEFEVEAKDQNCKVILTNGKQAPDWLAAEPY*-------------EPAAMRVYTVCDESKYLIV-RNVPSLGCGDDLANLFAT-YGPV--D----ECTP--------MDAEDCDPYTD-VFFI------------K-FSQVSNARFAKRKLDESVFLGNRLQVSYAPQFE-------SLLDTKEKLEVRRKEVLGRMKSSS*
+METGNKYIEKRAIDLSRERDPNFFDHPGIPVPECFWFMFKNNVRQDAGTCYSSWKMDMKVGPNWVHIKSDDNCNLSGDFPPGWIVLGKKRPGF*AFHLEPKTVELRVSMHCYGCAKKVQKHISKMDGVTSFEVDLESK-KVVVIGDITPYEVLASVS-KVMKFAELWVAPN----------------------*
+........:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*    ........................................ .................. .............                      *
+METGNKYIEKRAIDLSRERDPNFFDHPGIPVPECFWFMFKNNVRQDAGTCYSSWKMDMKVGPNWVHIKSDDNCNLSGDFPPGWIVLGKKRPGF*----MVQKIVIKVHMSSDKCRRKAMALAASTGGVVSVELAGDDRSKVVVVGDVDSIGLTNALRRKVDGSAELVEVSDASKKKEEEAKKKEEKEELVYYH*
 
-#Total CPU time is  0.21 seconds
+#Total CPU time is  0.08 seconds
 
 """
 
@@ -43,7 +43,7 @@ def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float]:
     RMSD and the aligned length.
     """
     
-    command = (f"USalign {model} {native} -mol prot -mm 1 -ter 1").split()
+    command = (f"USalign {model} {native} -TMscore 7 -ter 1").split()
     p = subprocess.run(command, capture_output=True)
     output_lines = p.stdout.decode().split("\n")
     
