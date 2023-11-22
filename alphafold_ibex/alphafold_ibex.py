@@ -108,12 +108,6 @@ class AlphafoldIbex(IbexRun):
             self.model_names_str = 'None'
         else:
             self.model_names_str = ','.join(model_names)
-
-
-        if self.gpu_type == 'a100':
-            self.reservation_string = '#SBATCH --reservation=A100\n'
-        else:
-            self.reservation_string = ''
             
         if mail:
             self.mail_string = (f'#SBATCH --mail-user={mail}\n'
@@ -292,7 +286,6 @@ class AlphafoldIbex(IbexRun):
                 f'#SBATCH --cpus-per-task={self.cpus_per_task}\n'
                 f'#SBATCH --constraint={self.gpu_type}\n'
                 f'#SBATCH --array=0-{self.njobs-1}\n'
-                f'{self.reservation_string}'
                 f'{self.mail_string}'
                 '\n'
                 f'module load alphafold/2.3.1/python3\n'
