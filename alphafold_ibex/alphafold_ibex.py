@@ -236,7 +236,7 @@ class AlphafoldIbex(IbexRun):
             self.write_random_seeds()
         
         self.python_command = (
-            f'{self.conda_env}/bin/python {self.python_file} '
+            f'python {self.python_file} '
             '${seq_file} '
             f'{self.models_to_relax} {self.out_dir} {self.recycles} '
             f'{self.multimer_predictions_per_model} '
@@ -288,7 +288,6 @@ class AlphafoldIbex(IbexRun):
                 f'#SBATCH --array=0-{self.njobs-1}\n'
                 f'{self.mail_string}'
                 '\n'
-                f'module load alphafold/2.3.1/python3\n'
                 'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
                 'export TF_FORCE_UNIFIED_MEMORY=1\n'
                 'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'

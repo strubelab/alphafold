@@ -204,7 +204,7 @@ class AlphaFold(Executor):
         Make the appropriate arguments for the monomer or multimer case
         """
         self.args = (
-            f'python3 '
+            f'python '
             f'{self.ALPHAFOLD_SCRIPT} '
             f'--fasta_paths={self.fasta_path} '
             f'--data_dir={self.ALPHAFOLD_DATA} '
