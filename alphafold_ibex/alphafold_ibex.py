@@ -288,6 +288,7 @@ class AlphafoldIbex(IbexRun):
                 f'#SBATCH --array=0-{self.njobs-1}\n'
                 f'{self.mail_string}'
                 '\n'
+                'module load cuda/11.8\n'
                 'export CUDA_VISIBLE_DEVICES=0,1,2,3\n'
                 'export TF_FORCE_UNIFIED_MEMORY=1\n'
                 'export XLA_PYTHON_CLIENT_MEM_FRACTION=0.5\n'
