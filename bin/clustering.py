@@ -7,6 +7,7 @@ This script performs the following actions to cluster structures:
 3. Merge the sequence and structure clusters
 4. Copy the PDBs from each joint cluster to a new directory
 5. Make Pymol sessions for the top clusters
+6. Align all vs all members of each cluster, and save the alignment scores
 """
 
 import argparse
@@ -554,6 +555,49 @@ def joint_clusters_df(seqclusters:pd.DataFrame, strclusters:pd.DataFrame
     return strclusters
 
 
+def align_all(clusters:pd.DataFrame, destination: Path,
+              topclusters:pd.DataFrame) -> pd.DataFrame:
+    """
+    Align all vs all the members of each of the top clusters
+
+    Args:
+        clusters (pd.DataFrame): DataFrame with the cluster representatives and
+            members
+        destination (Path): Path to the directory with the pdbs for each cluster
+        topclusters (pd.DataFrame): DataFrame with the top clusters
+
+    Returns:
+        pd.DataFrame: DataFrame with the alignment scores
+    """
+    aligned_dfs = []
+    for i, cluster in enumerate(topclusters.index):
+        
+        logging.info("Aligning {cluster}...")
+        
+        members = clusters[clusters.merged_rep == cluster].member.values
+        cluster_dir = destination / f"cluster{i+1}_{cluster}"
+        
+        aligned_scores = []
+        while members:
+            ref = members.pop()
+            ref_path = cluster_dir / (ref + ".pdb")
+            
+            for m in members:
+                m_path = cluster_dir / (m + ".pdb")
+                aligned_length, rmsd, tmscore_m, tmscore_ref = calculate_tmscore(
+                                                                m_path, ref_path)
+                aligned_scores.append((cluster, ref, m, tmscore_ref, tmscore_m,
+                                       aligned_length, rmsd))
+
+        # Make dataframe
+        columns = ['cluster', 'ref', 'member', 'tmscore_ref', 'tmscore_m',
+                'aligned_length', 'rmsd']
+        aligned_df = pd.DataFrame(aligned_scores, columns=columns)
+        aligned_dfs.append(aligned_df)
+
+    return pd.concat(aligned_dfs)
+
+
 if __name__ == '__main__':
 
     args = parsing()
@@ -599,9 +643,11 @@ if __name__ == '__main__':
     
     strclusters.to_csv(out_merged / "scores_clusters.csv")
 
-    logging.info("Clustering clusters...")
+    # logging.info("Clustering clusters...")
+    # alignment_scores = cluster_clusters(strclusters, out_merged, topclusters)
     
-    alignment_scores = cluster_clusters(strclusters, out_merged, topclusters)
+    logging.info("Aligning all vs all members of each cluster...")
+    alignment_scores = align_all(strclusters, out_merged, topclusters)
     
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 

@@ -51,7 +51,9 @@ def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float]:
                                    ).group(1))
     rmsd = float(re.search(r"RMSD=\s+(\d+\.\d+),",output_lines[13]
                            ).group(1))
-    tm_score = float(re.search(r"^TM-score=\s+(\d+\.\d+)", output_lines[15]
+    tmscore_model = float(re.search(r"^TM-score=\s+(\d+\.\d+)", output_lines[14]
+                               ).group(1))
+    tmscore_native = float(re.search(r"^TM-score=\s+(\d+\.\d+)", output_lines[15]
                                ).group(1))
     
-    return aligned_length, rmsd, tm_score
+    return aligned_length, rmsd, tmscore_model, tmscore_native
