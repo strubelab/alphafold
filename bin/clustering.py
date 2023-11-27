@@ -180,7 +180,7 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     else:
         pdbs_dir = top_models_dir
 
-    logging.info("Running strcutural clustering...")
+    logging.info("Running structural clustering...")
     command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
                f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
     
@@ -572,9 +572,9 @@ def align_all(clusters:pd.DataFrame, destination: Path,
     aligned_dfs = []
     for i, cluster in enumerate(topclusters.index):
         
-        logging.info("Aligning {cluster}...")
+        logging.info(f"Aligning cluster {cluster}...")
         
-        members = clusters[clusters.merged_rep == cluster].member.values
+        members = list(clusters[clusters.merged_rep == cluster].member.values)
         cluster_dir = destination / f"cluster{i+1}_{cluster}"
         
         aligned_scores = []
