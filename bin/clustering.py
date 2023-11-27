@@ -538,7 +538,7 @@ def joint_clusters_df(seqclusters:pd.DataFrame, strclusters:pd.DataFrame
     return strclusters
 
 
-def align_all(clusters:pd.DataFrame, destination: Path,
+def align_all(destination: Path,
               topclusters:pd.DataFrame,
               clustered_clusters:pd.DataFrame) -> pd.DataFrame:
     """
@@ -559,7 +559,12 @@ def align_all(clusters:pd.DataFrame, destination: Path,
         
         logging.info(f"Aligning cluster {cluster}...")
         
-        members = list(clusters[clusters.merged_rep == cluster].member.values)
+        # Get the members that are also part of the largest subcluster
+        members = clustered_clusters[clustered_clusters.cluster == cluster]
+        largest_subcluster = members.subcluster_rep.value_counts().index[0]
+        members = list(members[members.subcluster_rep == largest_subcluster]
+                       .member.values)
+        
         cluster_dir = destination / f"cluster{i+1}_{cluster}"
         
         aligned_scores = []
@@ -630,11 +635,11 @@ if __name__ == '__main__':
 
     logging.info("Clustering clusters...")
     clustered_clusters = cluster_clusters(strclusters, out_merged, topclusters)
+    clustered_clusters.to_csv(out_merged / "clustered_clusters.csv")
     
     logging.info("Aligning all vs all members of each cluster...")
-    alignment_scores = align_all(strclusters, out_merged, topclusters,
+    alignment_scores = align_all(out_merged, topclusters,
                                  clustered_clusters)
-    
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
     logging.info("Done!!")
