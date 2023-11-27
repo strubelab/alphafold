@@ -373,7 +373,7 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
         destination (Path): Path to the directory with the pdbs for each cluster
         topclusters (pd.DataFrame): DataFrame with the top clusters
     """
-    aligned_dfs = []
+    clustered_clusters = []
     for i, cluster in enumerate(topclusters.index):
 
         logging.info(f"Clustering {cluster}")
@@ -396,31 +396,14 @@ def cluster_clusters(clusters:pd.DataFrame, destination:Path,
                                     destination=cluster_clusters_dir,
                                     top_models_dir=cluster_merged)
         strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
-        strclusters['rep'] = strclusters['rep'].str.split('.pdb').str[0] 
-        # This is the ID of the largest cluster representative
-        # It will be used to align all the members of the supercluster
-        largest_rep = strclusters.rep.value_counts().index[0]
+        strclusters['rep'] = strclusters['rep'].str.split('.pdb').str[0]
+        strclusters['cluster'] = cluster
         
-        ## use us-align to align all the members of the supercluster
-        ## to the largest cluster representative
-        logging.info("Aligning members to cluster representative...")
-        aligned_scores = []
-        for m in members:
-            subcluster_rep = strclusters[strclusters.member == m].rep.values[0]
-            m_path = cluster_dir / (m + ".pdb")
-            rep_path = cluster_dir / (largest_rep + ".pdb")
-            aligned_length, rmsd, tmscore = calculate_tmscore(m_path, rep_path)
-            aligned_scores.append((cluster, largest_rep, m, aligned_length,
-                                    rmsd, tmscore, subcluster_rep))
+        strclusters.rename(columns={'rep':'subcluster_rep'}, inplace=True)
         
-        # Make dataframe
-        columns = ['cluster', 'rep_align', 'member', 'aligned_length', 'rmsd',
-                     'tmscore', 'subcluster_rep']
-        aligned_df = pd.DataFrame(aligned_scores, columns=columns)
-        
-        aligned_dfs.append(aligned_df)
+        clustered_clusters.append(strclusters)
     
-    return pd.concat(aligned_dfs)
+    return pd.concat(clustered_clusters)
 
 
 def get_topcluster_members(clusters:pd.DataFrame, min_count:int=2) -> Dict[str, Set[str]]:
@@ -556,7 +539,8 @@ def joint_clusters_df(seqclusters:pd.DataFrame, strclusters:pd.DataFrame
 
 
 def align_all(clusters:pd.DataFrame, destination: Path,
-              topclusters:pd.DataFrame) -> pd.DataFrame:
+              topclusters:pd.DataFrame,
+              clustered_clusters:pd.DataFrame) -> pd.DataFrame:
     """
     Align all vs all the members of each of the top clusters
 
@@ -565,6 +549,7 @@ def align_all(clusters:pd.DataFrame, destination: Path,
             members
         destination (Path): Path to the directory with the pdbs for each cluster
         topclusters (pd.DataFrame): DataFrame with the top clusters
+        clustered_clusters (pd.DataFrame): DataFrame with the clustered clusters
 
     Returns:
         pd.DataFrame: DataFrame with the alignment scores
@@ -643,11 +628,12 @@ if __name__ == '__main__':
     
     strclusters.to_csv(out_merged / "scores_clusters.csv")
 
-    # logging.info("Clustering clusters...")
-    # alignment_scores = cluster_clusters(strclusters, out_merged, topclusters)
+    logging.info("Clustering clusters...")
+    clustered_clusters = cluster_clusters(strclusters, out_merged, topclusters)
     
     logging.info("Aligning all vs all members of each cluster...")
-    alignment_scores = align_all(strclusters, out_merged, topclusters)
+    alignment_scores = align_all(strclusters, out_merged, topclusters,
+                                 clustered_clusters)
     
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
