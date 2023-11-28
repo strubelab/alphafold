@@ -635,7 +635,7 @@ if __name__ == '__main__':
 
     logging.info("Clustering clusters...")
     clustered_clusters = cluster_clusters(strclusters, out_merged, topclusters)
-    clustered_clusters.to_csv(out_merged / "clustered_clusters.csv")
+    clustered_clusters.to_csv(out_merged / "clustered_clusters.csv", index=False)
     
     logging.info("Aligning all vs all members of each cluster...")
     alignment_scores = align_all(out_merged, topclusters,
