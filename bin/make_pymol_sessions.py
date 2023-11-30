@@ -253,8 +253,7 @@ def merge_chains(pdbs_dir:Path, destination:Path):
     logging.info(f"Processed {count} models.")
 
 
-def cluster_clusters(clusters:pd.DataFrame, destination:Path,
-                     topclusters:list):
+def cluster_clusters(destination:Path, topclusters:list):
     """
     For each cluster:
     1. Merge the chains of each PDB in the cluster
@@ -348,6 +347,7 @@ if __name__ == '__main__':
                                 args.min_tmscore, args.min_fraction_binder)
     
     logging.info(f"Identified {len(clusters)} top clusters.")
+    logging.info(f"Top clusters: {clusters}")
     
     logging.info("Copying pdbs from the top clusters...")
     copy_pdbs(strclusters, pdbs_dir, out_merged, clusters)
@@ -356,7 +356,7 @@ if __name__ == '__main__':
     make_pymol_sessions(strclusters, out_merged, clusters)
 
     logging.info("Clustering clusters...")
-    clustered_clusters = cluster_clusters(strclusters, out_merged, clusters)
+    clustered_clusters = cluster_clusters(out_merged, clusters)
     clustered_clusters.to_csv(out_merged / "clustered_clusters.csv", index=False)
 
     logging.info("Done!!")
