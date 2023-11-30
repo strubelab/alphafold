@@ -461,6 +461,56 @@ def align_all(clusters:pd.DataFrame,
     return pd.concat(aligned_dfs)
 
 
+def medians_alignments(alignment_scores:pd.DataFrame,
+                       clusters:pd.DataFrame,
+                       pdbs_dir:Path) -> pd.DataFrame:
+    """
+    Get the median alignment scores for each cluster
+
+    Args:
+        alignment_scores (pd.DataFrame): DataFrame with the alignment scores
+        clusters (pd.DataFrame): DataFrame with the cluster representatives and
+                                 members
+        pdbs_dir (Path): Path to the directory with the models
+    Returns:
+        pd.DataFrame: DataFrame with the median alignment scores
+    """
+    
+    # Concatenate the scores for the reference and the member
+    columns = ['cluster', 'ref', 'tmscore_ref', 'rmsd', 'aligned_length']
+    scores1 = alignment_scores[columns].copy().rename(
+                                columns={'ref': 'member', 'tmscore_ref': 'tmscore'})
+
+    columns = ['cluster', 'member', 'tmscore_m', 'rmsd', 'aligned_length']
+    scores2 = alignment_scores[columns].copy().rename(
+                                columns={'tmscore_m': 'tmscore'})
+
+    all_scores = pd.concat([scores1, scores2])
+    
+    # Create a column for cluster size
+    all_scores['cluster_size'] = all_scores.cluster.map(
+                                             clusters.merged_rep.value_counts())
+    
+    # Calculate the median values for each member of each cluster
+    median_scores = all_scores.groupby(['cluster', 'member']).median().reset_index()
+
+    # Create column for the fraction of the binder in the alignment
+    median_scores['fraction_binder'] = 0
+    for i in median_scores.index:
+        m = median_scores.loc[i, 'member']
+        m_pdb = pdbs_dir / (m + ".pdb")
+        
+        model = b.PDBModel(os.fspath(m_pdb))
+        length_bait = len(model.takeChains([0]).sequence())
+        length_binder = len(model.takeChains([1]).sequence())
+        
+        aligned_length = median_scores.loc[i, 'aligned_length']
+        median_scores.loc[i, 'fraction_binder'] = ((aligned_length - length_bait)
+                                                                / length_binder)
+
+    return median_scores
+
+    
 if __name__ == '__main__':
 
     args = parsing()
