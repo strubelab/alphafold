@@ -4,9 +4,7 @@
 This script performs the following actions to cluster structures:
 1. Run mmseqs easy-cluster to cluster the candidates by sequence identity
 2. Run foldseek easy-cluster to cluster the models by structure
-3. Merge the sequence and structure clusters
-4. Copy the PDBs from each joint cluster to a new directory
-5. Make Pymol sessions for the top clusters
+3. Merge the sequence and structure clusters, and save the results
 6. Align all vs all members of each cluster, and save the alignment scores
 """
 
@@ -16,7 +14,6 @@ import shutil
 import subprocess
 import re
 import os
-from pymol import cmd
 from typing import Dict, Set, Union, Tuple
 
 import pandas as pd
@@ -255,77 +252,6 @@ def get_top_pdbs(models_dir:Path, destination:Path):
     return pdbs_dir
 
 
-def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path,
-              topclusters:pd.DataFrame) -> None:
-    """
-    Copy the top pdbs from the top clusters to a new directory
-    
-    Args:
-        clusters (pd.DataFrame): DataFrame with the cluster representatives and
-            members
-        pdbs_dir (Path): Path to the directory with the models
-        destination (Path): Path to the directory where the pdbs will be copied
-        top_n (int): Number of top clusters to copy
-    """
-    
-    for i, cluster in enumerate(topclusters.index):
-        # Get cluster members
-        members = clusters[clusters.merged_rep == cluster].member.values
-        cluster_dir = destination / f"cluster{i+1}_{cluster}"
-        cluster_dir.mkdir()
-        for member in members:
-            pdb_name = pdbs_dir / (member + ".pdb")
-            assert pdb_name.exists(), f"{pdb_name} doesn't exist"
-            new_name = cluster_dir / (member + ".pdb")
-            shutil.copy(pdb_name, new_name)
-
-
-def make_pymol_sessions(clusters:pd.DataFrame, destination:Path,
-                        topclusters:pd.DataFrame) -> None:
-    """
-    Create the pymol session with the superimposition of each of the clusters
-
-    Args:
-        clusters (pd.DataFrame): DataFrame with the clustering results
-        destination (Path): Path to the directory with the pdbs for each cluster
-        topclusters (pd.DataFrame): DataFrame with the top clusters
-    """
-    
-    for i, cluster in enumerate(topclusters.index):
-        # Get cluster members
-        members = clusters[clusters.merged_rep == cluster].member.values
-        cluster_dir = destination / f"cluster{i+1}_{cluster}"
-
-        # Load the cluster representative first
-        if re.search(r'.pdb_[AB]$', cluster):
-            chain = cluster[-1]
-            cname = cluster.split('.pdb')[0]
-            fname = cluster_dir / (cname + ".pdb")
-            oname = f"{cname}_rep{chain}"
-            cmd.load(fname, oname)
-            cmd.do(f"select chain {chain} AND model {oname}")
-        else:
-            fname = cluster_dir / (cluster + ".pdb")
-            cmd.load(fname, f"{cluster}_rep")
-            cmd.do(f"select chain B AND model {cluster}_rep")
-        
-        # Load and align the members one by one
-        for member in members:
-            if not member in cluster:
-                fname = cluster_dir / (member + ".pdb")
-                cmd.load(fname)
-                cmd.align(member, "sele")
-        
-        cmd.do('bg white')
-        cmd.do('set ray_shadow, 0')
-        cmd.do('color grey80')
-        cmd.do('select chain A')
-        cmd.do('color slate, sele')
-        
-        cmd.save(cluster_dir / "session.pse")
-        cmd.do('delete all')
-
-
 def merge_chains(pdbs_dir:Path, destination:Path):
     """
     Merge the chains of a PDB into a single chain and write it to the destination
@@ -356,54 +282,6 @@ def merge_chains(pdbs_dir:Path, destination:Path):
         count += 1
 
     logging.info(f"Processed {count} models.")
-
-
-def cluster_clusters(clusters:pd.DataFrame, destination:Path,
-                     topclusters:pd.DataFrame):
-    """
-    For each cluster:
-    1. Merge the chains of each PDB in the cluster
-    2. Do structural clustering to identify the "consensus" structure of the cluster
-    3. Use us-align to align all the members of the cluster to the consensus structure
-    4. Save the alignment scores in a DataFrame
-    
-    Args:
-        clusters (pd.DataFrame): DataFrame with the cluster representatives and
-            members
-        destination (Path): Path to the directory with the pdbs for each cluster
-        topclusters (pd.DataFrame): DataFrame with the top clusters
-    """
-    clustered_clusters = []
-    for i, cluster in enumerate(topclusters.index):
-
-        logging.info(f"Clustering {cluster}")
-
-        members = clusters[clusters.merged_rep == cluster].member.values
-        cluster_dir = destination / f"cluster{i+1}_{cluster}"
-        cluster_merged = destination / f"cluster{i+1}_{cluster}_merged"
-        if not cluster_merged.exists():
-            cluster_merged.mkdir()
-        cluster_clusters_dir = destination / f"cluster{i+1}_{cluster}_clusters"
-        if not cluster_clusters_dir.exists():
-            cluster_clusters_dir.mkdir()
-        
-        # Merge the chains
-        logging.info(f"Merging chains for cluster {cluster_dir.name}...")
-        merge_chains(cluster_dir, cluster_merged)
-        
-        # Do structural clustering on the merged chains
-        strclusters, pdbs_dir = run_structure_clustering(
-                                    destination=cluster_clusters_dir,
-                                    top_models_dir=cluster_merged)
-        strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
-        strclusters['rep'] = strclusters['rep'].str.split('.pdb').str[0]
-        strclusters['cluster'] = cluster
-        
-        strclusters.rename(columns={'rep':'subcluster_rep'}, inplace=True)
-        
-        clustered_clusters.append(strclusters)
-    
-    return pd.concat(clustered_clusters)
 
 
 def get_topcluster_members(clusters:pd.DataFrame, min_count:int=2) -> Dict[str, Set[str]]:
@@ -539,37 +417,35 @@ def joint_clusters_df(seqclusters:pd.DataFrame, strclusters:pd.DataFrame
 
 
 def align_all(clusters:pd.DataFrame,
-              destination: Path,
-              topclusters:pd.DataFrame) -> pd.DataFrame:
+              pdbs_dir: Path) -> pd.DataFrame:
     """
-    Align all vs all the members of each of the top clusters
+    Align all vs all the members of every cluster
 
     Args:
         clusters (pd.DataFrame): DataFrame with the cluster representatives and
             members
-        destination (Path): Path to the directory with the pdbs for each cluster
-        topclusters (pd.DataFrame): DataFrame with the top clusters
-        clustered_clusters (pd.DataFrame): DataFrame with the clustered clusters
+        pdbs_dir (Path): Path to the directory with the models
 
     Returns:
         pd.DataFrame: DataFrame with the alignment scores
     """
+    
+    clusters_names = clusters.merged_rep.unique()
+    
     aligned_dfs = []
-    for i, cluster in enumerate(topclusters.index):
+    for i, cluster in enumerate(clusters_names):
         
         logging.info(f"Aligning cluster {cluster}...")
         
         members = list(clusters[clusters.merged_rep == cluster].member.values)
         
-        cluster_dir = destination / f"cluster{i+1}_{cluster}"
-        
         aligned_scores = []
         while members:
             ref = members.pop()
-            ref_path = cluster_dir / (ref + ".pdb")
+            ref_path = pdbs_dir / (ref + ".pdb")
             
             for m in members:
-                m_path = cluster_dir / (m + ".pdb")
+                m_path = pdbs_dir / (m + ".pdb")
                 aligned_length, rmsd, tmscore_m, tmscore_ref = calculate_tmscore(
                                                                 m_path, ref_path)
                 aligned_scores.append((cluster, ref, m, tmscore_ref, tmscore_m,
@@ -611,30 +487,14 @@ if __name__ == '__main__':
     strclusters, seqclusters = add_quality_scores(strclusters, seqclusters,
                                                   args.models_dir)
     
-    strclusters = joint_clusters_df(seqclusters, strclusters)
-
-    # Copy the pdbs from the top clsuters to a new directory
-    # and make pymol sessions for the top clusters
     out_merged = args.destination / "merged_clusters"
     out_merged.mkdir()
-    topclusters = (strclusters.groupby('merged_rep')
-                   .agg({'iptms': 'mean', 'binder': 'count'})
-                   .sort_values(by=['binder', 'iptms'], ascending=False)
-                   .head(args.top_n))
-    logging.info("Copying pdbs from the top clusters...")
-    copy_pdbs(strclusters, pdbs_dir, out_merged, topclusters)
     
-    logging.info("Making Pymol sessions...")
-    make_pymol_sessions(strclusters, out_merged, topclusters)
-    
+    strclusters = joint_clusters_df(seqclusters, strclusters)
     strclusters.to_csv(out_merged / "scores_clusters.csv")
-
-    logging.info("Clustering clusters...")
-    clustered_clusters = cluster_clusters(strclusters, out_merged, topclusters)
-    clustered_clusters.to_csv(out_merged / "clustered_clusters.csv", index=False)
     
     logging.info("Aligning all vs all members of each cluster...")
-    alignment_scores = align_all(strclusters, out_merged, topclusters)
+    alignment_scores = align_all(strclusters, pdbs_dir)
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
     logging.info("Done!!")
