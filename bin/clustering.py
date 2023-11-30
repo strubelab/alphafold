@@ -548,4 +548,9 @@ if __name__ == '__main__':
     alignment_scores = align_all(strclusters, pdbs_dir)
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
+
+    logging.info("Calculating median alignment scores...")
+    median_scores = medians_alignments(alignment_scores, strclusters, pdbs_dir)
+    median_scores.to_csv(out_merged / "median_scores.csv", index=False)
+    
     logging.info("Done!!")
