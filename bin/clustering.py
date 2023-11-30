@@ -429,13 +429,14 @@ def align_all(clusters:pd.DataFrame,
     Returns:
         pd.DataFrame: DataFrame with the alignment scores
     """
-    
-    clusters_names = clusters.merged_rep.unique()
+    # Filter out clusters with no merged_rep
+    clusters_names = clusters[clusters.merged_rep.notna()].merged_rep.unique()
+    len_clusters = len(clusters_names)
     
     aligned_dfs = []
     for i, cluster in enumerate(clusters_names):
         
-        logging.info(f"Aligning cluster {cluster}...")
+        logging.info(f"Aligning cluster {i+1} of {len_clusters}...")
         
         members = list(clusters[clusters.merged_rep == cluster].member.values)
         
