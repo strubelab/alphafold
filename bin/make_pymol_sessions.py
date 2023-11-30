@@ -15,16 +15,13 @@ import subprocess
 import re
 import os
 from pymol import cmd
-from typing import Dict, Set, Union, Tuple
+from typing import Union, Tuple
 
 import pandas as pd
-import numpy as np
 import biskit as b
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
-
-from alphafold_ibex.run_usalign import calculate_tmscore
 
 def parsing(args: list=None) -> argparse.Namespace:
     """
@@ -49,26 +46,6 @@ def parsing(args: list=None) -> argparse.Namespace:
             raise ValueError("The specified directory doesn't exist.")
             
         return d
-    
-    def validate_out(d:str) -> Path:
-        """
-        Create the directory if it doesn't exist.
-        """
-        d = Path(d)
-        if not d.exists():
-            d.mkdir()
-            
-        return d
-    
-    # def validate_input(d:str) -> Path:
-    #     """
-    #     Validate that the input file exists
-    #     """
-    #     d = Path(d)
-    #     if not d.exists():
-    #         raise ValueError("The specified file doesn't exist.")
-            
-    #     return d
 
     parser = argparse.ArgumentParser(description=('Copy the top structures and '
         'plots to other directories.'))
@@ -95,42 +72,6 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=float, default=0.2)
     
     return parser.parse_args(args)
-
-
-
-def run_sequence_clustering(destination:Path, candidates_file:Path,
-                        results_prefix:str="clusterRes", temp_dir:str="tmp",
-                        min_seq_id:float=0.3, coverage:float=0.8, cov_mode:int=2,
-                        sensitivity:int=7):
-    """
-    Run mmseqs easy-cluster to cluster the candidates by sequence identity
-
-    Args:
-        destination (Path): Parent destination path
-        candidates_file (Path): Path to the FASTA file with the candidates
-        results_prefix (str, optional): Prefix for the result files. Defaults to "clusterRes".
-        temp_dir (str, optional): Defaults to "tmp".
-        min_seq_id (float, optional): Defaults to 0.3.
-        coverage (float, optional): Defaults to 0.8.
-        cov_mode (int, optional): Defaults to 2.
-        sensitivity (int, optional): Defaults to 7.
-    """
-    
-    out_seqcluster = destination / "seqclusters"
-    out_seqcluster.mkdir()
-
-    logging.info("Running sequence clustering...")
-    command = (f"mmseqs easy-cluster {candidates_file} {results_prefix} {temp_dir} "
-               f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
-               f"-s {sensitivity}").split()
-    
-    p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
-
-    logging.info("Processing output...")
-    seqclusters_tsv = out_seqcluster / "clusterRes_cluster.tsv"
-    seqclusters = pd.read_table(seqclusters_tsv, header=None, names=["rep", "member"])
-
-    return seqclusters
     
 
 def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
@@ -171,32 +112,6 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     strclusters = pd.read_table(strclusters_tsv, header=None, names=["rep", "member"])
 
     return strclusters, pdbs_dir
-
-
-def add_quality_scores(strclusters:pd.DataFrame, seqclusters:pd.DataFrame,
-                       models_dir:Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Add the quality scores to the clusters
-
-    Args:
-        strclusters (pd.DataFrame): DataFrame with the structural clusters
-        seqclusters (pd.DataFrame): DataFrame with the sequence clusters
-        models_dir (Path): Path to the directory with the models from AlphaFold
-                           and pdockq scores
-
-    """
-    
-    logging.info("Adding quality scores to the clusters...")
-    pdockq = pd.read_csv(models_dir / "scores/scores_pdockq.csv")
-    pdockq['binder'] = pdockq.complex.str.split('_').str[1].str[:-2]
-
-    strclusters = pdockq.merge(strclusters, how='left', left_on='binder',
-                                right_on='member')
-
-    seqclusters = pdockq.merge(seqclusters, how='left', left_on='binder',
-                                right_on='member')
-    
-    return strclusters, seqclusters
 
 
 def get_top_pdbs(models_dir:Path, destination:Path):
