@@ -149,7 +149,7 @@ if __name__ == '__main__':
     top_candidate_sequences = []
     for c in top_complexes:
         candidate_sequence = list(SeqIO.parse(args.models_dir / c / f'{c}.fasta',
-                                              'fasta'))[1]
+                                              'fasta'))[-1]
         top_candidate_sequences.append(candidate_sequence)
     
     # Save the top candidates
