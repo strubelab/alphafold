@@ -495,7 +495,7 @@ def medians_alignments(alignment_scores:pd.DataFrame,
     median_scores = all_scores.groupby(['cluster', 'member']).median().reset_index()
 
     # Create column for the fraction of the binder in the alignment
-    median_scores['fraction_binder'] = 0
+    median_scores['fraction_binder'] = 0.0
     for i in median_scores.index:
         m = median_scores.loc[i, 'member']
         m_pdb = pdbs_dir / (m + ".pdb")
