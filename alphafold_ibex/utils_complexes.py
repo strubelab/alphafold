@@ -185,7 +185,11 @@ def check_missing_models(completed: List[str], out_dir: Path,
     if screen_mode:
         # If in screen mode, only look for the 'iptms.json' file
         for sid in completed:
-            model_dir = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            if sid == bait_id:
+                dirname = f'{sid}-{nbait+ncandidate}'
+            else:
+                dirname = f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            model_dir = out_dir / dirname
             model_scores = model_dir / 'iptms.json'
             if model_scores.exists():
                 modeled.append(sid)
@@ -194,7 +198,11 @@ def check_missing_models(completed: List[str], out_dir: Path,
     else:
         # If making full models, count all the ranked*.pdb files
         for sid in completed:
-            model_dir = out_dir / f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            if sid == bait_id:
+                dirname = f'{sid}-{nbait+ncandidate}'
+            else:
+                dirname = f'{bait_id}-{nbait}_{sid}-{ncandidate}'
+            model_dir = out_dir / dirname
             model_files = list(model_dir.glob('ranked_*.pdb'))
             nmodels = len(models_to_run) * multimer_predictions_per_model
             if len(model_files) == nmodels:
