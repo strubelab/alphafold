@@ -71,6 +71,12 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=("Minimum fraction of the binder for a cluster to be considered."),
         type=float, default=0.2)
     
+    parser.add_argument("--min_size",
+        help=("Minimum number of members for a cluster to be considered. If "
+              "this is given, the clusters will be filtered by size after "
+              "filtering by other criteria."),
+        type=int, default=None)
+    
     return parser.parse_args(args)
     
 
@@ -302,7 +308,8 @@ def cluster_clusters(destination:Path, topclusters:list):
 def get_top_clusters(median_scores:pd.DataFrame,
                      min_members:int,
                      min_tmscore:float=0.2,
-                     min_fraction_binder:float=0.2) -> list:
+                     min_fraction_binder:float=0.2,
+                     min_size:int=None) -> list:
     """
     Get the top clusters based on the median alignment score and fraction of
     the binder
@@ -328,7 +335,11 @@ def get_top_clusters(median_scores:pd.DataFrame,
               (median_scores_filtered.fraction_binder >= min_fraction_binder))
     median_scores_filtered = median_scores_filtered[select]
 
-    clusters = list(median_scores_filtered.cluster.unique())
+    if min_size:
+        select = median_scores_filtered.cluster_size >= min_size
+        clusters = list(median_scores_filtered[select].cluster.unique())
+    else:
+        clusters = list(median_scores_filtered.cluster.unique())
     
     return clusters
 
@@ -344,7 +355,8 @@ if __name__ == '__main__':
     out_merged = args.clusters_dir
     
     clusters = get_top_clusters(median_scores, args.min_members,
-                                args.min_tmscore, args.min_fraction_binder)
+                                args.min_tmscore, args.min_fraction_binder,
+                                args.min_size)
     
     logging.info(f"Identified {len(clusters)} top clusters.")
     logging.info(f"Top clusters: {clusters}")
