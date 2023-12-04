@@ -163,7 +163,7 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
         raise ValueError("The region with PAE below the threshold is too short. "
                          "Please try raising the threshold.")
     
-    return minleft, maxright
+    return int(minleft), int(maxright)
 
 
 def extract_pdb_region(pdb:Path, leftind:int, rightind:int, destination:Path
