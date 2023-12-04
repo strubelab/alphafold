@@ -118,8 +118,12 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
     mean_pae1 = mean_pae1[slength:]
     
     belowthresh_indices1 = np.where(mean_pae1 <= pthresh)
-    btleft1 = belowthresh_indices1[0][0]
-    btright1 = belowthresh_indices1[0][-1]
+    if len(belowthresh_indices1[0]) == 0:
+        btleft1 = np.nan
+        btright1 = np.nan
+    else:
+        btleft1 = belowthresh_indices1[0][0]
+        btright1 = belowthresh_indices1[0][-1]
 
     # Extract the columns corresponding to the first sequence and all the rows.
     # Then calculate the mean of each row.
@@ -128,10 +132,38 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
     mean_pae2 = mean_pae2[slength:]
     
     belowthresh_indices2 = np.where(mean_pae2 <= pthresh)
-    btleft2 = belowthresh_indices2[0][0]
-    btright2 = belowthresh_indices2[0][-1]
+    if len(belowthresh_indices2[0]) == 0:
+        btleft2 = np.nan
+        btright2 = np.nan
+    else:
+        btleft2 = belowthresh_indices2[0][0]
+        btright2 = belowthresh_indices2[0][-1]
     
-    return min(btleft1, btleft2), max(btright1, btright2)
+    if all(np.isnan([btleft1, btright1, btleft2, btright2])):
+        raise ValueError("No region with PAE below the threshold was found. "
+                         "Please try raising the threshold.")
+    else:
+        # Find the minimum of the left indices, where one could be nan
+        btleft1 = btleft1 if not np.isnan(btleft1) else np.inf
+        btleft2 = btleft2 if not np.isnan(btleft2) else np.inf
+        minleft = np.min([btleft1, btleft2])
+        assert not np.isinf(minleft)
+        
+        # Find the maximum of the right indices, where one could be nan
+        btright1 = btright1 if not np.isnan(btright1) else -np.inf
+        btright2 = btright2 if not np.isnan(btright2) else -np.inf
+        maxright = np.max([btright1, btright2])
+        assert not np.isinf(maxright)
+    
+    # Check that the indices are in the correct order
+    minleft, maxright = np.min([minleft, maxright]), np.max([minleft, maxright])
+    
+    # Check that the region is at least 10 residues long
+    if maxright - minleft < 10:
+        raise ValueError("The region with PAE below the threshold is too short. "
+                         "Please try raising the threshold.")
+    
+    return minleft, maxright
 
 
 def extract_pdb_region(pdb:Path, leftind:int, rightind:int, destination:Path
