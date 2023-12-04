@@ -140,8 +140,10 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
         btright2 = belowthresh_indices2[0][-1]
     
     if all(np.isnan([btleft1, btright1, btleft2, btright2])):
-        raise ValueError("No region with PAE below the threshold was found. "
-                         "Please try raising the threshold.")
+        # raise ValueError("No region with PAE below the threshold was found. "
+        #                  "Please try raising the threshold.")
+        minleft, maxright, pthresh = get_lowpae_indices(pae, slength, pthresh + 5)
+        return minleft, maxright, pthresh
     else:
         # Find the minimum of the left indices, where one could be nan
         btleft1 = btleft1 if not np.isnan(btleft1) else np.inf
@@ -159,11 +161,13 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
     minleft, maxright = np.min([minleft, maxright]), np.max([minleft, maxright])
     
     # Check that the region is at least 10 residues long
-    if maxright - minleft < 10:
-        raise ValueError("The region with PAE below the threshold is too short. "
-                         "Please try raising the threshold.")
+    if maxright - minleft < 20:
+        # raise ValueError("The region with PAE below the threshold is too short. "
+        #                  "Please try raising the threshold.")
+        minleft, maxright, pthresh = get_lowpae_indices(pae, slength, pthresh + 5)
+        return minleft, maxright, pthresh
     
-    return int(minleft), int(maxright)
+    return int(minleft), int(maxright), pthresh
 
 
 def extract_pdb_region(pdb:Path, leftind:int, rightind:int, destination:Path
@@ -210,8 +214,9 @@ if __name__ == "__main__":
                 sequences = list(SeqIO.parse(ffile, 'fasta'))
                 
                 # Get the indices of the region with low PAE
-                leftind, rightind = get_lowpae_indices(pae, len(sequences[0]),
-                                                       args.pae_threshold)
+                leftind, rightind, pthresh = get_lowpae_indices(pae,
+                                                            len(sequences[0]),
+                                                            args.pae_threshold)
                 
                 # Read pdb and extract the region
                 extract_pdb_region(top_pdb, leftind, rightind, pdbs_dir)
@@ -220,7 +225,8 @@ if __name__ == "__main__":
                 seq_trimmed = sequences[1][leftind:rightind]
                 trimmed_candidates.append(seq_trimmed)
                 
-                candidates_regions.append((seq_trimmed.id, leftind, rightind))
+                candidates_regions.append((seq_trimmed.id, pthresh, leftind,
+                                           rightind))
     
     logging.info(f"Processed {count} complexes.")
     
@@ -229,5 +235,6 @@ if __name__ == "__main__":
                 'fasta')
     
     # Write the regions of the candidates to a file
-    pd.DataFrame(candidates_regions, columns=['id', 'left', 'right']).to_csv(
+    pd.DataFrame(candidates_regions,
+                 columns=['id', 'pae_threshold', 'left', 'right']).to_csv(
         args.out_dir / "candidates_regions.csv", index=False)
