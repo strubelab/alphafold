@@ -107,10 +107,6 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('E-value for structural clustering. (Default=0.01)'), default=0.01,
         type=float)
     
-    parser.add_argument("--top_n",
-        help=('Number of top clusters to copy. (Default=10)'), default=10,
-        type=int)
-    
     return parser.parse_args(args)
 
 
