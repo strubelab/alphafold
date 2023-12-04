@@ -139,7 +139,7 @@ if __name__ == '__main__':
     for c in highest_scores.complex:
         try:
             pdock_scores[c] = obtain_mpdockq(args.models_dir / c)
-        except IndexError:
+        except (IndexError, KeyError):
             logging.warning(f'Could not calculate pDockQ for {c}')
             pdock_scores[c] = (np.nan, np.nan, np.nan)
     
