@@ -15,6 +15,7 @@ import subprocess
 import re
 import os
 from typing import Dict, Set, Union, Tuple
+from subprocess import CalledProcessError
 
 import pandas as pd
 import numpy as np
@@ -136,8 +137,12 @@ def run_sequence_clustering(destination:Path, candidates_file:Path,
     command = (f"mmseqs easy-cluster {candidates_file} {results_prefix} {temp_dir} "
                f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
                f"-s {sensitivity}").split()
-    
-    p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
+    try:
+        p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
+        p.check_returncode()
+    except CalledProcessError as e:
+        fail(p, "mmseqs", command, e)
+        
 
     logging.info("Processing output...")
     seqclusters_tsv = out_seqcluster / "clusterRes_cluster.tsv"
@@ -177,7 +182,11 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
                f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
     
-    p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
+    try:
+        p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
+        p.check_returncode()
+    except CalledProcessError as e:
+        fail(p, "foldseek", command, e)
     
     logging.info("Processing output...")
     strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
@@ -505,6 +514,24 @@ def medians_alignments(alignment_scores:pd.DataFrame,
                                                                 / length_binder)
 
     return median_scores
+
+
+def fail(process:subprocess.CompletedProcess, program:str, args:list,
+         error:CalledProcessError):
+    """
+    Generates the error message and raises the corresponding error if the
+    program fails.
+    """
+    error_string = \
+        f"\n{program} EXECUTION FAILED.\n"+\
+        f"Command: {' '.join(args)}\n"
+
+    error_string += \
+        f"Returncode: {process.returncode}\n"+\
+        f"stdout: \n"+\
+        process.stdout
+    
+    raise error
 
     
 if __name__ == '__main__':
