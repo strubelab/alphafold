@@ -60,15 +60,18 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=validate_dir, default=None)
     
     parser.add_argument("--min_members",
-        help=("Minimum number of members for a cluster to be considered."),
+        help=("Minimum number of members for a cluster to be considered. "
+              "Default: 5"),
         type=int, default=5)
     
     parser.add_argument("--min_tmscore",
-        help=("Minimum median TM-score for a cluster to be considered."),
+        help=("Minimum median TM-score for a cluster to be considered. "
+              "(Default: 0.2)"),
         type=float, default=0.2)
     
     parser.add_argument("--min_fraction_binder",
-        help=("Minimum fraction of the binder for a cluster to be considered."),
+        help=("Minimum fraction of the binder for a cluster to be considered. "
+              "(Default: 0.2)"),
         type=float, default=0.2)
     
     parser.add_argument("--min_size",
@@ -76,6 +79,10 @@ def parsing(args: list=None) -> argparse.Namespace:
               "this is given, the clusters will be filtered by size after "
               "filtering by other criteria."),
         type=int, default=None)
+    
+    parser.add_argument("--max_rmsd",
+        help=("Maximum RMSD for a cluster to be considered. (Default: 15.0)"),
+        type=float, default=15.0)
     
     return parser.parse_args(args)
     
@@ -309,7 +316,8 @@ def get_top_clusters(median_scores:pd.DataFrame,
                      min_members:int,
                      min_tmscore:float=0.2,
                      min_fraction_binder:float=0.2,
-                     min_size:int=None) -> list:
+                     min_size:int=None,
+                     max_rmsd:float=15.0) -> list:
     """
     Get the top clusters based on the median alignment score and fraction of
     the binder
@@ -327,13 +335,12 @@ def get_top_clusters(median_scores:pd.DataFrame,
         list of str: List with the top clusters
     """
 
-    # Select the clusters with at least 5 members
-    select = median_scores.cluster_size >= min_members
+    # Select the clusters based on all the criteria
+    select = (median_scores.cluster_size >= min_members & \
+              median_scores.tmscore >= min_tmscore & \
+              median_scores.fraction_binder >= min_fraction_binder & \
+              median_scores.rmsd <= max_rmsd)
     median_scores_filtered = median_scores[select]
-    
-    select = ((median_scores_filtered.tmscore >= min_tmscore) & \
-              (median_scores_filtered.fraction_binder >= min_fraction_binder))
-    median_scores_filtered = median_scores_filtered[select]
 
     if min_size:
         select = median_scores_filtered.cluster_size >= min_size
@@ -356,7 +363,7 @@ if __name__ == '__main__':
     
     clusters = get_top_clusters(median_scores, args.min_members,
                                 args.min_tmscore, args.min_fraction_binder,
-                                args.min_size)
+                                args.min_size, args.max_rmsd)
     
     logging.info(f"Identified {len(clusters)} top clusters.")
     logging.info(f"Top clusters: {clusters}")
