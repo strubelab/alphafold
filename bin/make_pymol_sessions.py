@@ -336,10 +336,10 @@ def get_top_clusters(median_scores:pd.DataFrame,
     """
 
     # Select the clusters based on all the criteria
-    select = (median_scores.cluster_size >= min_members & \
-              median_scores.tmscore >= min_tmscore & \
-              median_scores.fraction_binder >= min_fraction_binder & \
-              median_scores.rmsd <= max_rmsd)
+    select = ((median_scores.cluster_size >= min_members) & \
+              (median_scores.tmscore >= min_tmscore) & \
+              (median_scores.fraction_binder >= min_fraction_binder) & \
+              (median_scores.rmsd <= max_rmsd))
     median_scores_filtered = median_scores[select]
 
     if min_size:
