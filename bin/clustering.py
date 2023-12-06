@@ -131,21 +131,26 @@ def run_sequence_clustering(destination:Path, candidates_file:Path,
     """
     
     out_seqcluster = destination / "seqclusters"
-    out_seqcluster.mkdir()
+    out_seqcluster.mkdir(exist_ok=True)
 
-    logging.info("Running sequence clustering...")
-    command = (f"mmseqs easy-cluster {candidates_file} {results_prefix} {temp_dir} "
-               f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
-               f"-s {sensitivity}").split()
-    try:
-        p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
-        p.check_returncode()
-    except CalledProcessError as e:
-        fail(p, "mmseqs", command, e)
-        
-
-    logging.info("Processing output...")
     seqclusters_tsv = out_seqcluster / "clusterRes_cluster.tsv"
+
+    if not seqclusters_tsv.exists():
+
+        logging.info("Running sequence clustering...")
+        command = (f"mmseqs easy-cluster {candidates_file} {results_prefix} {temp_dir} "
+                f"--min-seq-id {min_seq_id} -c {coverage} --cov-mode {cov_mode} "
+                f"-s {sensitivity}").split()
+        try:
+            p = subprocess.run(command, cwd=out_seqcluster, capture_output=True)
+            p.check_returncode()
+        except CalledProcessError as e:
+            fail(p, "mmseqs", command, e)
+        
+    else:
+        logging.info("Sequence clustering output already exists.")
+        
+    logging.info("Processing output...")
     seqclusters = pd.read_table(seqclusters_tsv, header=None, names=["rep", "member"])
 
     return seqclusters
@@ -170,26 +175,32 @@ def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
     """
     
     out_strcluster = destination / "strclusters"
-    out_strcluster.mkdir()
+    out_strcluster.mkdir(exist_ok=True)
 
     if top_models_dir is None:
         logging.info("Copying models to new directory...")
         pdbs_dir = get_top_pdbs(models_dir, out_strcluster)
     else:
         pdbs_dir = top_models_dir
-
-    logging.info("Running structural clustering...")
-    command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
-               f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
     
-    try:
-        p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
-        p.check_returncode()
-    except CalledProcessError as e:
-        fail(p, "foldseek", command, e)
+    strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
+
+    if not strclusters_tsv.exists():
+
+        logging.info("Running structural clustering...")
+        command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
+                f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
+        
+        try:
+            p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
+            p.check_returncode()
+        except CalledProcessError as e:
+            fail(p, "foldseek", command, e)
+    
+    else:
+        logging.info("Structure clustering output already exists.")
     
     logging.info("Processing output...")
-    strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
     strclusters = pd.read_table(strclusters_tsv, header=None, names=["rep", "member"])
 
     return strclusters, pdbs_dir
@@ -307,13 +318,12 @@ def get_topcluster_members(clusters:pd.DataFrame, min_count:int=2) -> Dict[str, 
      'A0A0P0XNZ0': {'A0A0P0XNZ0', 'A0A0P0XQ16'}}
     """
     # Get the member count
-    member_counts = (clusters.groupby('rep').agg({'member': 'count'})
-                 .sort_values(by='member', ascending=False).reset_index())
+    member_counts = clusters.rep.value_counts()
     # Get the clusters with more than one member
-    top_clusters = member_counts[member_counts.member >= min_count]
+    top_clusters = member_counts[member_counts >= min_count].index
     # Get the members of the top clusters
     top_clusters_members = {r:set(clusters[clusters.rep==r].member.tolist()) \
-                           for r in top_clusters.rep}
+                           for r in top_clusters}
     
     return top_clusters_members
 
@@ -528,8 +538,10 @@ def fail(process:subprocess.CompletedProcess, program:str, args:list,
 
     error_string += \
         f"Returncode: {process.returncode}\n"+\
-        f"stdout: \n"+\
-        process.stdout
+        f"STDERR: \n"+\
+        process.stderr.decode("utf-8")
+
+    logging.error(error_string)
     
     raise error
 
