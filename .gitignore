@@ -6,3 +6,4 @@ runs
 .ipynb_checkpoints
 *.egg-info
 .virtual_documents
+tmp
