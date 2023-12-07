@@ -347,28 +347,53 @@ def merge_dict_values(unmerged_dict:Dict[str, Set[str]]) -> Dict[str, Set[str]]:
         if members is None:
             continue
 
-        merged_members = set()
+        merged_members = members
         keys_to_merge = []
         for rep2, members2 in unmerged_dict.items():
             if members2 is None:
                 continue
-            if not members.isdisjoint(members2):    # if they have elements in common
-                merged_members = merged_members | members | members2
+            if not merged_members.isdisjoint(members2):
+                merged_members = merged_members | members2
                 keys_to_merge.append(rep2)
 
         # Erase the values of the merged clusters
         for rep2 in keys_to_merge:
             unmerged_dict[rep2] = None
+        
+        # Check in the joint dictionary if the merged cluster has elements in
+        # common with other clusters
+        keys_to_merge = []
+        for rep2, members2 in joint_dict.items():
+            if not merged_members.isdisjoint(members2):
+                merged_members = merged_members | members2
+                keys_to_merge.append(rep2)
+        
+        # Erase the old values from the joint dictionary
+        for rep2 in keys_to_merge:
+            del joint_dict[rep2]
 
-        if merged_members:
-            joint_dict[rep] = merged_members
-        else:
-            joint_dict[rep] = members
-    
+        joint_dict[rep] = merged_members
+
     return joint_dict
 
 
 def joint_cluster(seqclusters:pd.DataFrame, strclusters:pd.DataFrame) -> Dict[str, Set[str]]:
+    """
+    Function to merge the clusters from the structure and sequence clustering.
+    The top clusters from the structure clustering are taken as the base, and
+    the top clusters from the sequence clustering are merged into them. If a
+    sequence cluster has elements in common with more than one structure
+    cluster, they are merged into the same cluster.
+
+    Args:
+        seqclusters (pd.DataFrame): sequence clusters
+        strclusters (pd.DataFrame): structure clusters
+
+    Returns:
+        Dict[str, Set[str]]: Dictionary with the merged clusters. The keys are
+            the cluster representatives, and the values are the members of the
+            cluster. 
+    """
     
     top_seqclusters_members = get_topcluster_members(seqclusters)
     top_strclusters_members = get_topcluster_members(strclusters)
@@ -378,26 +403,22 @@ def joint_cluster(seqclusters:pd.DataFrame, strclusters:pd.DataFrame) -> Dict[st
     joint_clusters = {}
     merged_seqclusters = []
     for rep, members in top_strclusters_members.items():
-        merged_members = set()
+        merged_members = members
         for rep2, members2 in top_seqclusters_members.items():
-            if not members.isdisjoint(members2):
-                merged_members = merged_members | members | members2
+            if not merged_members.isdisjoint(members2):
+                merged_members = merged_members | members2
                 merged_seqclusters.append(rep2)
         
-        if merged_members:
-            joint_clusters[rep] = merged_members
-
-    # Merge joint clusters further in cases where they have elements in common
-    joint_clusters2 = merge_dict_values(joint_clusters)
-
-    # Merge the rest of the structure clusters
-    joint_clusters2 = top_strclusters_members | joint_clusters2
+        joint_clusters[rep] = merged_members
 
     # Merge the missing sequence clusters
     missing_seqclusters = set(top_seqclusters_members.keys()) - set(merged_seqclusters)
     if missing_seqclusters:
         for rep in missing_seqclusters:
-            joint_clusters2[rep] = top_seqclusters_members[rep]
+            joint_clusters[rep] = top_seqclusters_members[rep]
+            
+    # Merge joint clusters further in cases where they have elements in common
+    joint_clusters2 = merge_dict_values(joint_clusters)
     
     return joint_clusters2
 
@@ -454,6 +475,8 @@ def align_all(clusters:pd.DataFrame,
         logging.info(f"Aligning cluster {i+1} of {len_clusters}...")
         
         members = list(clusters[clusters.merged_rep == cluster].member.values)
+        
+        logging.info(f"{len(members)} members.")
         
         aligned_scores = []
         while members:
