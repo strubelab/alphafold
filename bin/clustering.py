@@ -500,8 +500,7 @@ def align_all(clusters:pd.DataFrame,
 
 
 def medians_alignments(alignment_scores:pd.DataFrame,
-                       clusters:pd.DataFrame,
-                       pdbs_dir:Path) -> pd.DataFrame:
+                       clusters:pd.DataFrame) -> pd.DataFrame:
     """
     Get the median alignment scores for each cluster
 
@@ -531,6 +530,14 @@ def medians_alignments(alignment_scores:pd.DataFrame,
     
     # Calculate the median values for each member of each cluster
     median_scores = all_scores.groupby(['cluster', 'member']).median().reset_index()
+
+    return median_scores
+
+
+def add_binder_fraction(median_scores:pd.DataFrame, pdbs_dir:Path) -> pd.DataFrame:
+    """
+    Add the fraction of the binder in the alignment to the median scores
+    """
 
     # Create column for the fraction of the binder in the alignment
     median_scores['fraction_binder'] = 0.0
@@ -606,9 +613,9 @@ if __name__ == '__main__':
     alignment_scores = align_all(strclusters, pdbs_dir)
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
-
     logging.info("Calculating median alignment scores...")
-    median_scores = medians_alignments(alignment_scores, strclusters, pdbs_dir)
+    median_scores = medians_alignments(alignment_scores, strclusters)
+    median_scores = add_binder_fraction(median_scores, pdbs_dir)
     median_scores.to_csv(out_merged / "median_scores.csv", index=False)
     
     logging.info("Done!!")
