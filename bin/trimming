@@ -75,7 +75,7 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--pae_threshold",
         help=('Threshold for the PAE score to select the region of the binder'
               ' that will be used for clustering. Defaults to 15.'),
-        type=validate_pae, default=15)
+        type=validate_pae, default=15.0)
  
     return parser.parse_args(args)
 
@@ -97,51 +97,66 @@ def get_pae(model_dir:Path) -> np.ndarray:
     return pae
 
 
-def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int, int]:
+def get_border_indices(slength:int, mean_pae:np.ndarray, pthresh:float
+                       ) -> Tuple[int, int]:
+    """
+    Get the indices of the first and last appearances of a pae score below
+    the threshold.
+
+    Args:
+        slength (int): length of the bait sequence (chain A)
+        mean_pae (np.ndarray): array of length complex_length with the mean
+                                 predicted aligned error
+        pthresh (float): pae threshold
+
+    Returns:
+        Tuple[int, int]: indices of the first and last appearances of a pae
+                            score below the threshold
+    """
+    # Extract only the values in the intersection with the second sequence
+    mean_pae = mean_pae[slength:]
+
+    belowthresh_indices = np.where(mean_pae <= pthresh)
+    if len(belowthresh_indices[0]) == 0:
+        btleft = np.nan
+        btright = np.nan
+    else:
+        btleft = belowthresh_indices[0][0]
+        btright = belowthresh_indices[0][-1]
+    
+    return btleft, btright
+
+
+def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float
+                       ) -> Tuple[int, int, float]:
     """
     Obtain the indices of the first and last appearances of a pae score below
     the threshold.
 
     Args:
-        pae (np.ndarray): _description_
-        blength (int): _description_
-        pthresh (float): _description_
+        pae (np.ndarray): array of length complex_length X complex_length with
+                          the predicted aligned error
+        slength (int): length of the bait sequence (chain A)
+        pthresh (float): pae threshold
 
     Returns:
-        float: _description_
+        Tuple[int, int, float]: indices of the first and last appearances of a
+                                pae score below the threshold, and the threshold
+                                used
     """
-    
+
     # Extract the rows corresponding to the first sequence and all the columns.
     # Then calculate the mean of each column.
     mean_pae1 = np.mean(pae[:slength,:], axis=0)
-    # Extract only the values in the intersection with the second sequence
-    mean_pae1 = mean_pae1[slength:]
-    
-    belowthresh_indices1 = np.where(mean_pae1 <= pthresh)
-    if len(belowthresh_indices1[0]) == 0:
-        btleft1 = np.nan
-        btright1 = np.nan
-    else:
-        btleft1 = belowthresh_indices1[0][0]
-        btright1 = belowthresh_indices1[0][-1]
+    btleft1, btright1 = get_border_indices(slength, mean_pae1, pthresh)
 
     # Extract the columns corresponding to the first sequence and all the rows.
     # Then calculate the mean of each row.
     mean_pae2 = np.mean(pae[:, :slength], axis=1)
-    # Extract only the values in the intersection with the second sequence
-    mean_pae2 = mean_pae2[slength:]
-    
-    belowthresh_indices2 = np.where(mean_pae2 <= pthresh)
-    if len(belowthresh_indices2[0]) == 0:
-        btleft2 = np.nan
-        btright2 = np.nan
-    else:
-        btleft2 = belowthresh_indices2[0][0]
-        btright2 = belowthresh_indices2[0][-1]
-    
+    btleft2, btright2 = get_border_indices(slength, mean_pae2, pthresh)
+
     if all(np.isnan([btleft1, btright1, btleft2, btright2])):
-        # raise ValueError("No region with PAE below the threshold was found. "
-        #                  "Please try raising the threshold.")
+        # keep increasing the threshold until we find a region with low PAE
         minleft, maxright, pthresh = get_lowpae_indices(pae, slength, pthresh + 5)
         return minleft, maxright, pthresh
     else:
@@ -150,24 +165,24 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float) -> Tuple[int,
         btleft2 = btleft2 if not np.isnan(btleft2) else np.inf
         minleft = np.min([btleft1, btleft2])
         assert not np.isinf(minleft)
-        
+
         # Find the maximum of the right indices, where one could be nan
         btright1 = btright1 if not np.isnan(btright1) else -np.inf
         btright2 = btright2 if not np.isnan(btright2) else -np.inf
         maxright = np.max([btright1, btright2])
         assert not np.isinf(maxright)
-    
+
     # Check that the indices are in the correct order
     minleft, maxright = np.min([minleft, maxright]), np.max([minleft, maxright])
-    
+
     # Check that the region is at least 10 residues long
     if maxright - minleft < 20:
-        # raise ValueError("The region with PAE below the threshold is too short. "
-        #                  "Please try raising the threshold.")
+        # keep increasing the threshold until we find a region of at least 20
+        # residues with low PAE
         minleft, maxright, pthresh = get_lowpae_indices(pae, slength, pthresh + 5)
         return minleft, maxright, pthresh
-    
-    return int(minleft), int(maxright), pthresh
+
+    return int(minleft), int(maxright)+1, pthresh
 
 
 def extract_pdb_region(pdb:Path, leftind:int, rightind:int, destination:Path
