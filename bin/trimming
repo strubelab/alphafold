@@ -97,7 +97,7 @@ def get_pae(model_dir:Path) -> np.ndarray:
     return pae
 
 
-def get_border_indices(slength:int, mean_pae:np.ndarray, pthresh:float
+def get_border_indices(mean_pae:np.ndarray, pthresh:float
                        ) -> Tuple[int, int]:
     """
     Get the indices of the first and last appearances of a pae score below
@@ -113,8 +113,6 @@ def get_border_indices(slength:int, mean_pae:np.ndarray, pthresh:float
         Tuple[int, int]: indices of the first and last appearances of a pae
                             score below the threshold
     """
-    # Extract only the values in the intersection with the second sequence
-    mean_pae = mean_pae[slength:]
 
     belowthresh_indices = np.where(mean_pae <= pthresh)
     if len(belowthresh_indices[0]) == 0:
@@ -145,15 +143,17 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float
                                 used
     """
 
-    # Extract the rows corresponding to the first sequence and all the columns.
-    # Then calculate the mean of each column.
-    mean_pae1 = np.mean(pae[:slength,:], axis=0)
-    btleft1, btright1 = get_border_indices(slength, mean_pae1, pthresh)
+    # Extract the rows corresponding to the first sequence and the columns
+    # corresponding to the second sequence.
+    # Then calculate the mean of each column
+    mean_pae1 = np.mean(pae[:slength, slength:], axis=0)
+    btleft1, btright1 = get_border_indices(mean_pae1, pthresh)
 
-    # Extract the columns corresponding to the first sequence and all the rows.
+    # Extract the columns corresponding to the first sequence and the rows
+    # corresponding to the second sequence.
     # Then calculate the mean of each row.
-    mean_pae2 = np.mean(pae[:, :slength], axis=1)
-    btleft2, btright2 = get_border_indices(slength, mean_pae2, pthresh)
+    mean_pae2 = np.mean(pae[slength:, :slength], axis=1)
+    btleft2, btright2 = get_border_indices(mean_pae2, pthresh)
 
     if all(np.isnan([btleft1, btright1, btleft2, btright2])):
         # keep increasing the threshold until we find a region with low PAE
@@ -176,7 +176,7 @@ def get_lowpae_indices(pae:np.ndarray, slength:int, pthresh:float
     minleft, maxright = np.min([minleft, maxright]), np.max([minleft, maxright])
 
     # Check that the region is at least 10 residues long
-    if maxright - minleft < 20:
+    if maxright - minleft < 19:
         # keep increasing the threshold until we find a region of at least 20
         # residues with low PAE
         minleft, maxright, pthresh = get_lowpae_indices(pae, slength, pthresh + 5)
