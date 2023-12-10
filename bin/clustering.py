@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import re
 import os
+import multiprocessing
+from itertools import combinations
 from typing import Dict, Set, Union, Tuple
 from subprocess import CalledProcessError
 
@@ -107,6 +109,9 @@ def parsing(args: list=None) -> argparse.Namespace:
     parser.add_argument("--evalue",
         help=('E-value for structural clustering. (Default=0.01)'), default=0.01,
         type=float)
+    
+    parser.add_argument("--cpus",
+        help=('Number of CPUs to use. (Default=1)'), default=1, type=int)
     
     return parser.parse_args(args)
 
@@ -453,7 +458,7 @@ def joint_clusters_df(seqclusters:pd.DataFrame, strclusters:pd.DataFrame
 
 
 def align_all(clusters:pd.DataFrame,
-              pdbs_dir: Path) -> pd.DataFrame:
+              pdbs_dir: Path, cpus:int=1) -> pd.DataFrame:
     """
     Align all vs all the members of every cluster
 
@@ -461,6 +466,7 @@ def align_all(clusters:pd.DataFrame,
         clusters (pd.DataFrame): DataFrame with the cluster representatives and
             members
         pdbs_dir (Path): Path to the directory with the models
+        cpus (int, optional): Number of CPUs to use. Defaults to 1.
 
     Returns:
         pd.DataFrame: DataFrame with the alignment scores
@@ -478,17 +484,18 @@ def align_all(clusters:pd.DataFrame,
         
         logging.info(f"{len(members)} members.")
         
-        aligned_scores = []
-        while members:
-            ref = members.pop()
-            ref_path = pdbs_dir / (ref + ".pdb")
+        member_combinations = combinations(members, 2)
+        member_paths = [(pdbs_dir / (m1 + ".pdb"), pdbs_dir / (m2 + ".pdb")) \
+                                        for m1, m2 in member_combinations]
+        
+        with multiprocessing.Pool(cpus) as pool:
             
-            for m in members:
-                m_path = pdbs_dir / (m + ".pdb")
-                aligned_length, rmsd, tmscore_m, tmscore_ref = calculate_tmscore(
-                                                                m_path, ref_path)
-                aligned_scores.append((cluster, ref, m, tmscore_ref, tmscore_m,
-                                       aligned_length, rmsd))
+            results = pool.starmap(calculate_tmscore, member_paths)
+        
+        
+        aligned_scores = [(cluster, m1, m2, tmscore_m1, tmscore_m2, aligned_length, rmsd) \
+                            for (m1, m2), (aligned_length, rmsd, tmscore_m1, tmscore_m2) \
+                            in zip(member_combinations, results)]
 
         # Make dataframe
         columns = ['cluster', 'ref', 'member', 'tmscore_ref', 'tmscore_m',
@@ -610,7 +617,7 @@ if __name__ == '__main__':
     strclusters.to_csv(out_merged / "scores_clusters.csv")
     
     logging.info("Aligning all vs all members of each cluster...")
-    alignment_scores = align_all(strclusters, pdbs_dir)
+    alignment_scores = align_all(strclusters, pdbs_dir, cpus=args.cpus)
     alignment_scores.to_csv(out_merged / "alignment_scores.csv", index=False)
 
     logging.info("Calculating median alignment scores...")

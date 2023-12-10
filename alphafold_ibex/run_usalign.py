@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Tuple
 
 
-def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float]:
+def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float,float]:
     """
     Do a structural alignment of pdb1 onto pdb2 and calculate the TM-score,
     RMSD and the aligned length.

@@ -327,9 +327,6 @@ class MergeDictValues(unittest.TestCase):
         self.assertEqual(merged_dict['str4'], {'N', 'O', 'P'})
 
 
-# The line below patches the calculate_tmscore function in the clustering module
-# so that it returns the values specified in the return_value argument.
-@patch('bin.clustering.calculate_tmscore', return_value=(100, 10.0, 0.5, 0.7))
 class AlignAllTest(unittest.TestCase):
     """
     Class to test the align_all function
@@ -343,7 +340,7 @@ class AlignAllTest(unittest.TestCase):
         self.clusters = pd.read_csv(clusters_file)
         
     
-    def test_single_cluster(self, mock_calculate_tmscore):
+    def test_single_cluster(self):
         """
         Test that a single cluster is aligned all vs all
         """
@@ -368,7 +365,7 @@ class AlignAllTest(unittest.TestCase):
                           'A0A0P0VRP6', 'A0A0P0VUN7', 'Q10M69', 'A0A0P0XNQ3'})
 
 
-    def test_single_cluster2(self, mock_calculate_tmscore):
+    def test_single_cluster2(self):
         """
         Test that a single cluster is aligned all vs all
         """
@@ -393,7 +390,7 @@ class AlignAllTest(unittest.TestCase):
                           'Q0J0U6', 'Q9FTW1'})
 
 
-    def test_two_clusters1(self, mock_calculate_tmscore):
+    def test_two_clusters1(self):
         """
         Test that two clusters are aligned all vs all
         """
