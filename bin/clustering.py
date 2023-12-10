@@ -611,7 +611,7 @@ if __name__ == '__main__':
                                                   args.models_dir)
     
     out_merged = args.destination / "merged_clusters"
-    out_merged.mkdir()
+    out_merged.mkdir(exist_ok=True)
     
     strclusters = joint_clusters_df(seqclusters, strclusters)
     strclusters.to_csv(out_merged / "scores_clusters.csv")
