@@ -7,7 +7,7 @@ from Bio import SeqIO
 
 sys.path.append(os.fspath(Path(__file__).parent.parent))
 
-from alphafold_ibex.utils import check_missing_sequences
+from alphafold_ibex.utils_complexes import check_missing_sequences
 
 class CheckMissingSequencesTest(unittest.TestCase):
     """
@@ -26,13 +26,13 @@ class CheckMissingSequencesTest(unittest.TestCase):
         
         missing_sequences = check_missing_sequences(out_dir, sequences)
         
-        self.assertEqual(len(missing_sequences), 3)
+        self.assertEqual(len(missing_sequences[0]), 3)
         
         missing_ids = ['A0A0P0UZH5', 'A0A0P0V7D8', 'A0A0P0V7I2']
         test_missing_sequences = [s for s in sequences \
                                   if s[0].id.split('|')[1] in missing_ids]
         
-        self.assertEqual(missing_sequences, test_missing_sequences)
+        self.assertEqual(missing_sequences[0], test_missing_sequences)
         
 
 if __name__ == '__main__':

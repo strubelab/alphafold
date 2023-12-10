@@ -151,13 +151,14 @@ class CheckMissingModelsTest(unittest.TestCase):
                                                                  'model_4_multimer_v3'],
                                                   multimer_predictions_per_model=1)
         
-        self.assertTrue(len(sequences_to_model)==4)
+        self.assertTrue(len(sequences_to_model[0])==4)
         
         missing_models = ['A0A0N7KJD4', 'A0A0N7KJF0', 'A0A0N7KKX8', 'A0A0N7KPF2']
         
-        sequences_to_model_ids = [s.id.split('|')[1] for s in sequences_to_model]
+        sequences_to_model_ids = [s.id.split('|')[1] for s in sequences_to_model[0]]
         
         self.assertEqual(set(sequences_to_model_ids), set(missing_models))
+        self.assertEqual(set(sequences_to_model[2]), set(missing_models))
 
 
 class CheckMissingHomomers(unittest.TestCase):
@@ -173,15 +174,20 @@ class CheckMissingHomomers(unittest.TestCase):
         completed = check_existing_features(features_dir, sequences)
         
         sequences_to_model = check_missing_homomers(completed, features_dir,
-                                                  sequences, 2)
+                                                  sequences, 2,
+                                                  screen_mode=True,
+                                                  models_to_run=['model_3_multimer_v3',
+                                                                 'model_4_multimer_v3'],
+                                                  multimer_predictions_per_model=1)
         
-        self.assertTrue(len(sequences_to_model)==4)
+        self.assertTrue(len(sequences_to_model[0])==4)
         
         missing_models = ['A0A0N7KJD4', 'A0A0N7KJF0', 'A0A0N7KKX8', 'A0A0N7KPF2']
         
-        sequences_to_model_ids = [s.id.split('|')[1] for s in sequences_to_model]
+        sequences_to_model_ids = [s.id.split('|')[1] for s in sequences_to_model[0]]
         
         self.assertEqual(set(sequences_to_model_ids), set(missing_models))
+        self.assertEqual(set(sequences_to_model[2]), set(missing_models))
 
 
 if __name__ == '__main__':

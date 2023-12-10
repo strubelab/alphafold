@@ -7,7 +7,7 @@ import re
 
 sys.path.append(os.fspath(Path(__file__).parent.parent))
 
-from alphafold_ibex.utils import (get_seeds, get_scores)
+from alphafold_ibex.utils_complexes import (get_seeds, get_scores)
 
 class CheckGetSeeds(unittest.TestCase):
     
