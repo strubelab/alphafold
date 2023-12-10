@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import sys
 import pandas as pd
+import pickle
 
 from unittest.mock import patch
 
@@ -345,24 +346,15 @@ class AlignAllTest(unittest.TestCase):
         Test that a single cluster is aligned all vs all
         """
         clusters = self.clusters[self.clusters.merged_rep=='A0A0P0XE00.pdb_B']
-        pdbs_dir = Path('.')
-        result = align_all(clusters, pdbs_dir)
-        
-        self.assertEqual(result.shape, (45, 7))
-        self.assertEqual(set(result.columns),
-                         {'cluster', 'ref', 'member', 'tmscore_ref',
-                          'tmscore_m', 'aligned_length', 'rmsd'})
-        self.assertEqual(result.tmscore_ref.unique()[0], 0.7)
-        self.assertEqual(result.tmscore_m.unique()[0], 0.5)
-        self.assertEqual(result.aligned_length.unique()[0], 100)
-        self.assertEqual(result.rmsd.unique()[0], 10.0)
-        self.assertEqual(result.cluster.unique()[0], 'A0A0P0XE00.pdb_B')
-        self.assertEqual(set(result.ref),
-                         {'Q5VQR7', 'A0A0P0VRN2', 'Q6L541', 'A0A0P0XE00',
-                          'Q94EE7', 'A0A0P0VRP6', 'A0A0P0VUN7', 'Q10M69', 'A0A0P0XNQ3'})
-        self.assertEqual(set(result.member),
-                         {'Q5VQR7', 'A0A0P0VRN2', 'Q6L541', 'Q0DH60', 'Q94EE7',
-                          'A0A0P0VRP6', 'A0A0P0VUN7', 'Q10M69', 'A0A0P0XNQ3'})
+        pdbs_dir = Path(__file__).parent / 'test_outputs/skp1_clusters/trimmed_pdbs'
+        result = align_all(clusters, pdbs_dir, cpus=4)
+
+        expected_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster1.pkl')
+        with open(expected_path, 'rb') as f:
+            expected_result = pickle.load(f)
+
+        self.assertTrue(expected_result.equals(result))
 
 
     def test_single_cluster2(self):
@@ -370,24 +362,15 @@ class AlignAllTest(unittest.TestCase):
         Test that a single cluster is aligned all vs all
         """
         clusters = self.clusters[self.clusters.merged_rep=='Q65XD1.pdb_B']
-        pdbs_dir = Path('.')
-        result = align_all(clusters, pdbs_dir)
+        pdbs_dir = Path(__file__).parent / 'test_outputs/skp1_clusters/trimmed_pdbs'
+        result = align_all(clusters, pdbs_dir, cpus=4)
         
-        self.assertEqual(result.shape, (28, 7))
-        self.assertEqual(set(result.columns),
-                         {'cluster', 'ref', 'member', 'tmscore_ref',
-                          'tmscore_m', 'aligned_length', 'rmsd'})
-        self.assertEqual(result.tmscore_ref.unique()[0], 0.7)
-        self.assertEqual(result.tmscore_m.unique()[0], 0.5)
-        self.assertEqual(result.aligned_length.unique()[0], 100)
-        self.assertEqual(result.rmsd.unique()[0], 10.0)
-        self.assertEqual(result.cluster.unique()[0], 'Q65XD1.pdb_B')
-        self.assertEqual(set(result.ref),
-                         {'Q9AUV3', 'Q0DPB7', 'Q65XD1', 'Q67TS1', 'Q94CZ1',
-                          'Q0J0U6', 'Q9FTW1'})
-        self.assertEqual(set(result.member),
-                         {'Q9AUV3', 'Q65XD1', 'Q67TS1', 'Q94CZ1', 'A0A0P0VQ06',
-                          'Q0J0U6', 'Q9FTW1'})
+        expected_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster2.pkl')
+        with open(expected_path, 'rb') as f:
+            expected_result = pickle.load(f)
+
+        self.assertTrue(expected_result.equals(result))
 
 
     def test_two_clusters1(self):
@@ -396,38 +379,25 @@ class AlignAllTest(unittest.TestCase):
         """
         select_clusters = ['A0A0P0XE00.pdb_B', 'Q65XD1.pdb_B']
         clusters = self.clusters[self.clusters.merged_rep.isin(select_clusters)]
-        pdbs_dir = Path('.')
-        result = align_all(clusters, pdbs_dir)
+        pdbs_dir = Path(__file__).parent / 'test_outputs/skp1_clusters/trimmed_pdbs'
+        result = align_all(clusters, pdbs_dir, cpus=4)
+
+        expected_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster1.pkl')
+        with open(expected_path, 'rb') as f:
+            expected_result1 = pickle.load(f)
         
-        self.assertEqual(result.shape, (73, 7))
-        self.assertEqual(set(result.columns),
-                         {'cluster', 'ref', 'member', 'tmscore_ref',
-                          'tmscore_m', 'aligned_length', 'rmsd'})
-        self.assertEqual(result.tmscore_ref.unique()[0], 0.7)
-        self.assertEqual(result.tmscore_m.unique()[0], 0.5)
-        self.assertEqual(result.aligned_length.unique()[0], 100)
-        self.assertEqual(result.rmsd.unique()[0], 10.0)
-        self.assertEqual(set(result.cluster.unique()), 
-                         {'A0A0P0XE00.pdb_B', 'Q65XD1.pdb_B'})
+        expected_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster2.pkl')
+        with open(expected_path, 'rb') as f:
+            expected_result2 = pickle.load(f)
         
-        result_cluster1 = result[result.cluster=='A0A0P0XE00.pdb_B']
-        self.assertEqual(set(result_cluster1.ref),
-                         {'Q5VQR7', 'A0A0P0VRN2', 'Q6L541', 'A0A0P0XE00',
-                          'Q94EE7', 'A0A0P0VRP6', 'A0A0P0VUN7', 'Q10M69', 'A0A0P0XNQ3'})
-        self.assertEqual(set(result_cluster1.member),
-                         {'Q5VQR7', 'A0A0P0VRN2', 'Q6L541', 'Q0DH60', 'Q94EE7',
-                          'A0A0P0VRP6', 'A0A0P0VUN7', 'Q10M69', 'A0A0P0XNQ3'})
+        expected_result = pd.concat([expected_result1, expected_result2]).reset_index(drop=True)
+        self.assertTrue(expected_result.equals(result))
         
-        result_cluster2 = result[result.cluster=='Q65XD1.pdb_B']
-        self.assertEqual(set(result_cluster2.ref),
-                         {'Q9AUV3', 'Q0DPB7', 'Q65XD1', 'Q67TS1', 'Q94CZ1',
-                          'Q0J0U6', 'Q9FTW1'})
-        self.assertEqual(set(result_cluster2.member),
-                         {'Q9AUV3', 'Q65XD1', 'Q67TS1', 'Q94CZ1', 'A0A0P0VQ06',
-                          'Q0J0U6', 'Q9FTW1'})
 
 
-@patch('bin.clustering.calculate_tmscore', return_value=(100, 10.0, 0.5, 0.7))
+
 class MedianAlignmentsTest(unittest.TestCase):
     """
     Class to test the align_all function
@@ -439,61 +409,91 @@ class MedianAlignmentsTest(unittest.TestCase):
                          'test_outputs/skp1_clusters/scores_clusters.csv')
         
         self.clusters = pd.read_csv(clusters_file)
+
+        alignments_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster1.pkl')
+        with open(alignments_path, 'rb') as f:
+            self.alignment_scores1 = pickle.load(f)
+        
+        alignments_path = (Path(__file__).parent / 'test_outputs/skp1_clusters/' \
+                                                'alignments_cluster2.pkl')
+        with open(alignments_path, 'rb') as f:
+            self.alignment_scores2 = pickle.load(f)
         
     
-    def test_single_cluster_medians1(self, mock_calculate_tmscore):
+    def test_single_cluster_medians1(self):
         """
         Test that a single cluster is aligned all vs all
         """
         clusters = self.clusters[self.clusters.merged_rep=='A0A0P0XE00.pdb_B']
-        pdbs_dir = Path('.')
-        alignment_scores = align_all(clusters, pdbs_dir)
-        median_scores = medians_alignments(alignment_scores, clusters)
+        median_scores = medians_alignments(self.alignment_scores1, clusters)
         
         self.assertEqual(median_scores.shape[0], clusters.shape[0])
         self.assertEqual(set(clusters.member), set(median_scores.member))
-        self.assertEqual(median_scores.iloc[0].tmscore, 0.5)
-        self.assertEqual(median_scores.iloc[1].tmscore, 0.7)
+
+        # Test two medians
+        prot1 = median_scores.iloc[0].member
+        median1 = pd.concat([
+                    self.alignment_scores1[self.alignment_scores1.ref==prot1].tmscore_ref,
+                    self.alignment_scores1[self.alignment_scores1.member==prot1].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[0].tmscore, median1)
+
+        prot2 = median_scores.iloc[1].member
+        median2 = pd.concat([
+                    self.alignment_scores1[self.alignment_scores1.ref==prot2].tmscore_ref,
+                    self.alignment_scores1[self.alignment_scores1.member==prot2].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[1].tmscore, median2)
+
     
-    def test_single_cluster_medians2(self, mock_calculate_tmscore):
+    def test_single_cluster_medians2(self):
         """
         Test that a single cluster is aligned all vs all
         """
         clusters = self.clusters[self.clusters.merged_rep=='Q65XD1.pdb_B']
-        pdbs_dir = Path('.')
-        alignment_scores = align_all(clusters, pdbs_dir)
-        median_scores = medians_alignments(alignment_scores, clusters)
+        median_scores = medians_alignments(self.alignment_scores2, clusters)
         
-        expected_medians = pd.DataFrame({
-            'cluster': ['Q65XD1.pdb_B'] * 8,
-            'member': ['A0A0P0VQ06', 'Q0DPB7', 'Q0J0U6', 'Q65XD1', 'Q67TS1',
-                       'Q94CZ1', 'Q9AUV3', 'Q9FTW1'],
-            'tmscore': [0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7],
-            'rmsd': [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
-            'aligned_length': [100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
-                                 100.0, 100.0],
-            'cluster_size': [8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0]
-        })
-        
-        self.assertTrue(expected_medians.equals(median_scores))
+        self.assertEqual(median_scores.shape[0], clusters.shape[0])
+        self.assertEqual(set(clusters.member), set(median_scores.member))
+
+        # Test two medians
+        prot1 = median_scores.iloc[0].member
+        median1 = pd.concat([
+                    self.alignment_scores2[self.alignment_scores2.ref==prot1].tmscore_ref,
+                    self.alignment_scores2[self.alignment_scores2.member==prot1].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[0].tmscore, median1)
+
+        prot2 = median_scores.iloc[1].member
+        median2 = pd.concat([
+                    self.alignment_scores2[self.alignment_scores2.ref==prot2].tmscore_ref,
+                    self.alignment_scores2[self.alignment_scores2.member==prot2].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[1].tmscore, median2)
     
 
-    def test_two_cluster_medians1(self, mock_calculate_tmscore):
+    def test_two_cluster_medians1(self):
         """
         Test that a single cluster is aligned all vs all
         """
         select_clusters = ['A0A0P0XE00.pdb_B', 'Q65XD1.pdb_B']
         clusters = self.clusters[self.clusters.merged_rep.isin(select_clusters)]
-        pdbs_dir = Path('.')
-        alignment_scores = align_all(clusters, pdbs_dir)
+        alignment_scores = pd.concat([self.alignment_scores1, self.alignment_scores2]
+                                    ).reset_index(drop=True)
         median_scores = medians_alignments(alignment_scores, clusters)
         
         self.assertEqual(median_scores.shape[0], clusters.shape[0])
         self.assertEqual(set(clusters.member), set(median_scores.member))
-        self.assertEqual(median_scores.iloc[0].tmscore, 0.5)
-        self.assertEqual(median_scores.iloc[1].tmscore, 0.7)
-        self.assertEqual(median_scores.iloc[10].tmscore, 0.5)
-        self.assertEqual(median_scores.iloc[11].tmscore, 0.7)
+        
+        # Test two medians
+        prot1 = median_scores.iloc[0].member
+        median1 = pd.concat([
+                    alignment_scores[alignment_scores.ref==prot1].tmscore_ref,
+                    alignment_scores[alignment_scores.member==prot1].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[0].tmscore, median1)
+
+        prot2 = median_scores.iloc[-1].member
+        median2 = pd.concat([
+                    alignment_scores[alignment_scores.ref==prot2].tmscore_ref,
+                    alignment_scores[alignment_scores.member==prot2].tmscore_m]).median()
+        self.assertEqual(median_scores.iloc[-1].tmscore, median2)
 
 
 class MockPDBModel:

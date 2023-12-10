@@ -43,10 +43,11 @@ def calculate_tmscore(model:Path, native:Path) -> Tuple[int,float,float,float]:
     RMSD and the aligned length.
     """
     
-    command = (f"USalign {model} {native} -TMscore 7 -ter 1").split()
+    command = (f"USalign {model.resolve()} {native.resolve()} -TMscore 7 -ter 1").split()
+
     p = subprocess.run(command, capture_output=True)
     output_lines = p.stdout.decode().split("\n")
-    
+
     aligned_length = int(re.search(r"Aligned length=\s+(\d+),", output_lines[13]
                                    ).group(1))
     rmsd = float(re.search(r"RMSD=\s+(\d+\.\d+),",output_lines[13]

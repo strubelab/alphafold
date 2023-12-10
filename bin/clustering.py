@@ -111,7 +111,7 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=float)
     
     parser.add_argument("--cpus",
-        help=('Number of CPUs to use. (Default=1)'), default=1, type=int)
+        help=('Maximum number of CPUs to use. (Default=1)'), default=1, type=int)
     
     return parser.parse_args(args)
 
@@ -484,11 +484,11 @@ def align_all(clusters:pd.DataFrame,
         
         logging.info(f"{len(members)} members.")
         
-        member_combinations = combinations(members, 2)
+        member_combinations = list(combinations(members, 2))
         member_paths = [(pdbs_dir / (m1 + ".pdb"), pdbs_dir / (m2 + ".pdb")) \
                                         for m1, m2 in member_combinations]
-        
-        with multiprocessing.Pool(cpus) as pool:
+
+        with multiprocessing.Pool(min(cpus, len(member_combinations))) as pool:
             
             results = pool.starmap(calculate_tmscore, member_paths)
         
@@ -503,7 +503,7 @@ def align_all(clusters:pd.DataFrame,
         aligned_df = pd.DataFrame(aligned_scores, columns=columns)
         aligned_dfs.append(aligned_df)
 
-    return pd.concat(aligned_dfs)
+    return pd.concat(aligned_dfs).reset_index(drop=True)
 
 
 def medians_alignments(alignment_scores:pd.DataFrame,
