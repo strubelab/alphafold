@@ -23,6 +23,8 @@ import biskit as b
 import logging
 logging.getLogger().setLevel(logging.INFO)
 
+from alphafold_ibex.clustering_utils import run_structure_clustering
+
 def parsing(args: list=None) -> argparse.Namespace:
     """
     Creates the argument parser instance and applies it to the command line
@@ -86,81 +88,6 @@ def parsing(args: list=None) -> argparse.Namespace:
     
     return parser.parse_args(args)
     
-
-def run_structure_clustering(destination:Path, top_models_dir:Union[Path, None],
-                    models_dir:Path=None, results_prefix:str="clusterRes",
-                    temp_dir:str="tmp", coverage:float=0.8, cov_mode:int=2,
-                    evalue:float=0.01) -> Tuple[pd.DataFrame, Path]:
-    """
-    Run foldseek easy-cluster to cluster the models by structure
-
-    Args:
-        destination (Path): Parent destination path
-        top_models_dir (Path): Path to the directory with the PDBs to cluster
-        models_dir (Path): Path to the directory with the models from AlphaFold
-        results_prefix (str, optional): Defaults to "clusterRes".
-        temp_dir (str, optional): Defaults to "tmp".
-        coverage (float, optional): Defaults to 0.8.
-        cov_mode (int, optional): Defaults to 2.
-        evalue (float, optional): Defaults to 0.01.
-    """
-    
-    out_strcluster = destination / "strclusters"
-    out_strcluster.mkdir()
-
-    if top_models_dir is None:
-        logging.info("Copying models to new directory...")
-        pdbs_dir = get_top_pdbs(models_dir, out_strcluster)
-    else:
-        pdbs_dir = top_models_dir
-
-    logging.info("Running structural clustering...")
-    command = (f"foldseek easy-cluster {pdbs_dir} {results_prefix} {temp_dir} "
-               f"-c {coverage} --cov-mode {cov_mode} -e {evalue}").split()
-    
-    p = subprocess.run(command, cwd=out_strcluster, capture_output=True)
-    
-    logging.info("Processing output...")
-    strclusters_tsv = out_strcluster / "clusterRes_cluster.tsv"
-    strclusters = pd.read_table(strclusters_tsv, header=None, names=["rep", "member"])
-
-    return strclusters, pdbs_dir
-
-
-def get_top_pdbs(models_dir:Path, destination:Path):
-    """
-    Copy the top ranked models for each complex, along with their 2D structure
-    plots, to a new directory.
-
-    Args:
-        models_dir (Path): Path to the directory with the models
-        destination (Path): Path to the directory where the pdbs will be copied
-    """
-    
-    pdbs_dir = destination / "all_pdbs"
-    plots_dir = destination / "all_plots"
-    pdbs_dir.mkdir()
-    plots_dir.mkdir()
-    
-    count=0
-    for d in models_dir.iterdir():
-        if d.is_dir():
-            top_pdb = d / "ranked_0.pdb"
-            if top_pdb.exists():
-                count += 1
-                # Copy top pdb to new destination
-                uid = re.search(r'-1_(\w+)-1', d.name).group(1)
-                new_name = pdbs_dir / (uid + ".pdb")
-                shutil.copy(top_pdb, new_name)
-                
-                # Copy plots for top pdbs to new destination
-                top_plot = list((d / "plots").glob("rank_0*.png"))[0]
-                new_name = plots_dir / (uid + ".png")
-                shutil.copy(top_plot, new_name)
-    
-    logging.info(f"Processed {count} models.")
-    
-    return pdbs_dir
 
 
 def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path,
@@ -234,45 +161,12 @@ def make_pymol_sessions(clusters:pd.DataFrame, destination:Path,
         cmd.do('delete all')
 
 
-def merge_chains(pdbs_dir:Path, destination:Path):
-    """
-    Merge the chains of a PDB into a single chain and write it to the destination
-
-    Args:
-        pdbs_dir (Path): Directory with the PDBs to merge
-    """
-    
-    pdbs = pdbs_dir.glob("*.pdb")
-    
-    count=0
-    for pdb in pdbs:
-        
-        m = b.PDBModel(os.fspath(pdb))
-        try:
-            len_a = len(m.takeChains([0]).atom2resProfile('residue_number'))
-            chainb = m.takeChains([1])
-        except:
-            print(pdb)
-            raise
-        chainb.renumberResidues(start=len_a+31)
-        m2 = m.takeChains([0]).concat(chainb)
-        m2.mergeChains(0, renumberResidues=False)
-        
-        new_name = destination / (pdb.name)
-        m2.writePdb(os.fspath(new_name))
-        
-        count += 1
-
-    logging.info(f"Processed {count} models.")
-
-
 def cluster_clusters(destination:Path, topclusters:list):
     """
     For each cluster:
-    1. Merge the chains of each PDB in the cluster
-    2. Do structural clustering to identify the "consensus" structure of the cluster
-    3. Use us-align to align all the members of the cluster to the consensus structure
-    4. Save the alignment scores in a DataFrame
+    1. Do structural clustering to identify the "consensus" structure of the cluster
+    2. Use us-align to align all the members of the cluster to the consensus structure
+    3. Save the alignment scores in a DataFrame
     
     Args:
         clusters (pd.DataFrame): DataFrame with the cluster representatives and
@@ -286,23 +180,19 @@ def cluster_clusters(destination:Path, topclusters:list):
         logging.info(f"Clustering {cluster}")
 
         cluster_dir = destination / f"cluster_{cluster}"
-        cluster_merged = destination / f"cluster_{cluster}_merged"
-        if not cluster_merged.exists():
-            cluster_merged.mkdir()
         cluster_clusters_dir = destination / f"cluster_{cluster}_clusters"
         if not cluster_clusters_dir.exists():
             cluster_clusters_dir.mkdir()
         
-        # Merge the chains
-        logging.info(f"Merging chains for cluster {cluster_dir.name}...")
-        merge_chains(cluster_dir, cluster_merged)
-        
         # Do structural clustering on the merged chains
         strclusters, pdbs_dir = run_structure_clustering(
                                     destination=cluster_clusters_dir,
-                                    top_models_dir=cluster_merged)
+                                    top_models_dir=cluster_dir)
+        
+        # Get only the clusters for the structures of the binder
+        strclusters = strclusters[strclusters.member.str.endswith('_B')]
+        # Remove the '.pdb_B' suffix from the members' names
         strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
-        strclusters['rep'] = strclusters['rep'].str.split('.pdb').str[0]
         strclusters['cluster'] = cluster
         
         strclusters.rename(columns={'rep':'subcluster_rep'}, inplace=True)
@@ -371,11 +261,11 @@ if __name__ == '__main__':
     logging.info("Copying pdbs from the top clusters...")
     copy_pdbs(strclusters, pdbs_dir, out_merged, clusters)
     
-    logging.info("Making Pymol sessions...")
-    make_pymol_sessions(strclusters, out_merged, clusters)
-
     logging.info("Clustering clusters...")
     clustered_clusters = cluster_clusters(out_merged, clusters)
     clustered_clusters.to_csv(out_merged / "clustered_clusters.csv", index=False)
+    
+    logging.info("Making Pymol sessions...")
+    make_pymol_sessions(strclusters, out_merged, clusters)
 
     logging.info("Done!!")
