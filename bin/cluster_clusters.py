@@ -11,14 +11,8 @@ This script performs the following actions, as a continuation to clusters.py:
 import argparse
 from pathlib import Path
 import shutil
-import subprocess
-import re
-import os
-from pymol import cmd
-from typing import Union, Tuple
 
 import pandas as pd
-import biskit as b
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -56,6 +50,11 @@ def parsing(args: list=None) -> argparse.Namespace:
         help=('Path to the directory with the merged clustering results.'),
         required=True, type=validate_dir)
     
+    parser.add_argument("--top_models_dir",
+        help=("Path with the top models for each complex. If this is given, "
+              "the top models will NOT be copied to a new directory."),
+        type=validate_dir, default=None)
+    
     parser.add_argument("--min_members",
         help=("Minimum number of members for a cluster to be considered. "
               "Default: 5"),
@@ -82,16 +81,19 @@ def parsing(args: list=None) -> argparse.Namespace:
         type=float, default=15.0)
     
     return parser.parse_args(args)
+    
 
 
-def make_pymol_sessions(clusters:pd.DataFrame, destination:Path,
-                        topclusters:list) -> None:
+def copy_pdbs(clusters:pd.DataFrame, pdbs_dir:Path, destination:Path,
+              topclusters:list) -> None:
     """
-    Create the pymol session with the superimposition of each of the clusters
-
+    Copy the top pdbs from the top clusters to a new directory
+    
     Args:
-        clusters (pd.DataFrame): DataFrame with the clustering results
-        destination (Path): Path to the directory with the pdbs for each cluster
+        clusters (pd.DataFrame): DataFrame with the cluster representatives and
+            members
+        pdbs_dir (Path): Path to the directory with the models
+        destination (Path): Path to the directory where the pdbs will be copied
         topclusters (list): List with the top clusters
     """
     
@@ -99,35 +101,53 @@ def make_pymol_sessions(clusters:pd.DataFrame, destination:Path,
         # Get cluster members
         members = clusters[clusters.merged_rep == cluster].member.values
         cluster_dir = destination / f"cluster_{cluster}"
-
-        # Load the cluster representative first
-        if re.search(r'.pdb_[AB]$', cluster):
-            chain = cluster[-1]
-            cname = cluster.split('.pdb')[0]
-            fname = cluster_dir / (cname + ".pdb")
-            oname = f"{cname}_rep{chain}"
-            cmd.load(fname, oname)
-            cmd.do(f"select chain {chain} AND model {oname}")
-        else:
-            fname = cluster_dir / (cluster + ".pdb")
-            cmd.load(fname, f"{cluster}_rep")
-            cmd.do(f"select chain B AND model {cluster}_rep")
-        
-        # Load and align the members one by one
+        cluster_dir.mkdir()
         for member in members:
-            if not member in cluster:
-                fname = cluster_dir / (member + ".pdb")
-                cmd.load(fname)
-                cmd.align(member, "sele")
+            pdb_name = pdbs_dir / (member + ".pdb")
+            assert pdb_name.exists(), f"{pdb_name} doesn't exist"
+            new_name = cluster_dir / (member + ".pdb")
+            shutil.copy(pdb_name, new_name)
+
+
+def cluster_clusters(destination:Path, topclusters:list):
+    """
+    For each cluster:
+    1. Do structural clustering to identify the "consensus" structure of the cluster
+    2. Use us-align to align all the members of the cluster to the consensus structure
+    3. Save the alignment scores in a DataFrame
+    
+    Args:
+        clusters (pd.DataFrame): DataFrame with the cluster representatives and
+            members
+        destination (Path): Path to the directory with the pdbs for each cluster
+        topclusters (list): List with the top clusters
+    """
+    clustered_clusters = []
+    for cluster in topclusters:
+
+        logging.info(f"Clustering {cluster}")
+
+        cluster_dir = destination / f"cluster_{cluster}"
+        cluster_clusters_dir = destination / f"cluster_{cluster}_clusters"
+        if not cluster_clusters_dir.exists():
+            cluster_clusters_dir.mkdir()
         
-        cmd.do('bg white')
-        cmd.do('set ray_shadow, 0')
-        cmd.do('color grey80')
-        cmd.do('select chain A')
-        cmd.do('color slate, sele')
+        # Do structural clustering on the merged chains
+        strclusters, pdbs_dir = run_structure_clustering(
+                                    destination=cluster_clusters_dir,
+                                    top_models_dir=cluster_dir)
         
-        cmd.save(cluster_dir / "session.pse")
-        cmd.do('delete all')
+        # Get only the clusters for the structures of the binder
+        strclusters = strclusters[strclusters.member.str.endswith('_B')]
+        # Remove the '.pdb_B' suffix from the members' names
+        strclusters['member'] = strclusters['member'].str.split('.pdb').str[0]
+        strclusters['cluster'] = cluster
+        
+        strclusters.rename(columns={'rep':'subcluster_rep'}, inplace=True)
+        
+        clustered_clusters.append(strclusters)
+    
+    return pd.concat(clustered_clusters)
 
 
 def get_top_clusters(median_scores:pd.DataFrame,
@@ -176,6 +196,7 @@ if __name__ == '__main__':
     strclusters = pd.read_csv(args.clusters_dir / "scores_clusters.csv")
     alignment_scores = pd.read_csv(args.clusters_dir / "alignment_scores.csv")
     median_scores = pd.read_csv(args.clusters_dir / "median_scores.csv")
+    pdbs_dir = args.top_models_dir
     out_merged = args.clusters_dir
     
     clusters = get_top_clusters(median_scores, args.min_members,
@@ -185,7 +206,11 @@ if __name__ == '__main__':
     logging.info(f"Identified {len(clusters)} top clusters.")
     logging.info(f"Top clusters: {clusters}")
     
-    logging.info("Making Pymol sessions...")
-    make_pymol_sessions(strclusters, out_merged, clusters)
+    logging.info("Copying pdbs from the top clusters...")
+    copy_pdbs(strclusters, pdbs_dir, destination=out_merged, topclusters=clusters)
+    
+    logging.info("Clustering clusters...")
+    clustered_clusters = cluster_clusters(out_merged, clusters)
+    clustered_clusters.to_csv(out_merged / "clustered_clusters.csv", index=False)
 
     logging.info("Done!!")
