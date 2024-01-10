@@ -155,8 +155,7 @@ if __name__ == '__main__':
     highest_scores = (highest_scores.merge(pdock_df, left_index=True, right_index=True)
                     .sort_values(by='iptms', ascending=False))
     
-    # Format to only show two decimals
-    highest_scores = (highest_scores.round(2).reset_index()
+    highest_scores = (highest_scores.reset_index()
                                     .rename(columns={"index": "complex"}))
     
     # Plot
