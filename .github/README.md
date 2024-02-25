@@ -1,4 +1,7 @@
 
+# AlphaFold-Ibex
+---
+
 # Table of contents
 
 - [Prerequisites](#prerequisites)
@@ -8,6 +11,7 @@
 - [AlphaFold pulldown](#alphafold-pulldown)
 - [Updating Alphafold](#updating-alphafold)
 - [Troubleshooting](#troubleshooting)
+- [Citing](#citing-alphafold-ibex)
 
 # Prerequisites
 
@@ -493,3 +497,10 @@ Done! You should have the latest version now and can use it as usual.
 - Why don't I just ask for as many resources as possible to prevent the program from failing?
 
   If you ask for more resources than your job will need, you might have to wait longer for those resources to become free and be assigned to you. Also you would prevent other users from accessing those resources for as long as your job is running. Remember that Ibex is used by many other people :)
+
+
+# Citing AlphaFold-Ibex
+
+If you use AlphaFold-Ibex in your research, please cite this repository as follows:
+
+- Francisco J. Guzmán-Vega and Stefan T. Arold, ‘Strubelab/Alphafold-Ibex: Scaling up Protein Modeling with AlphaFold for Slurm-Based HPC Clusters’, GitHub repository, 2024. DOI: 10.5281/zenodo.10548184
