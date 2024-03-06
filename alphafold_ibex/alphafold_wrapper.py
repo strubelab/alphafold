@@ -438,7 +438,7 @@ class AlphaFold(Executor):
         
         # Create a `rank` column
         ranks = {k: i for i,k in enumerate(self.model_rank)}
-        scores['rank'] = pd.Series(ranks)
+        scores.insert(0, 'rank', scores.index.map(ranks))
         scores.sort_values(by='rank', ascending=True, inplace=True)
         
         # Save to a file
