@@ -303,6 +303,33 @@ def check_missing_monomers(completed: List[str], out_dir: Path,
 
 ######## Find random seeds
 
+def get_scores_single_dir(model_dir:Path) -> pd.DataFrame:
+    """
+    Get the quality scores for a single model directory
+
+    Args:
+        model_dir (Path): Directory with the AF outputs for a single model/run
+
+    Returns:
+        pd.DataFrame: ipTM and pTM scores for all the models in this run
+    """
+    
+    d = model_dir
+
+    with open(d / "ranking_debug.json") as f:
+        iptm_ptms = json.load(f)['iptm+ptm']
+    with open(d / "iptms.json") as f:
+        iptms = json.load(f)['iptms']
+    df = pd.DataFrame.from_dict(iptm_ptms, orient="index",
+                                columns=["iptm+ptm"])
+    df["iptms"] = iptms
+    df["complex"] = d.name
+    # Reset the index
+    df = df.reset_index(names="model")
+
+    return df
+    
+
 def get_scores(models_dir:Path) -> pd.DataFrame:
     
     dirs = list(models_dir.iterdir())
@@ -311,16 +338,7 @@ def get_scores(models_dir:Path) -> pd.DataFrame:
     for d in dirs:
         ranking_file = d / "ranking_debug.json"
         if ranking_file.exists():
-            with open(d / "ranking_debug.json") as f:
-                iptm_ptms = json.load(f)['iptm+ptm']
-            with open(d / "iptms.json") as f:
-                iptms = json.load(f)['iptms']
-            df = pd.DataFrame.from_dict(iptm_ptms, orient="index",
-                                        columns=["iptm+ptm"])
-            df["iptms"] = iptms
-            df["complex"] = d.name
-            # Reset the index
-            df = df.reset_index(names="model")
+            df = get_scores_single_dir(d)
             dfs.append(df)
     
     logging.info(f"Found {len(dfs)} model directories with quality scores.")

@@ -26,6 +26,8 @@ from utils import process_outputs
 
 from property_plotting import plot_paes, plot_adjs, plot_dists, plot_plddts
 from structure_plotting import plot_protein
+from utils_complexes import get_scores_single_dir
+from scoring_functions import obtain_mpdockq
 
 import logging
 
@@ -403,6 +405,45 @@ class AlphaFold(Executor):
                 except:
                     logging.error(f"Could not generate protein plot for {name}...")
                     raise
+        
+        ## Get quality scores from the models
+        scores = get_scores_single_dir(self.out_model)
+        scores = scores.set_index('model')
+        try:
+            pdockq_scores = obtain_mpdockq(self.out_model)
+        except (IndexError, KeyError):
+            logging.warning(f'Could not calculate pDockQ for {self.out_model}')
+            pdockq_scores = (np.nan, np.nan, np.nan)
+        
+        scores['pDockQ'] = pdockq_scores[0]
+        scores['interface_pLDDT'] = pdockq_scores[1]
+        scores['n_interface_contacts'] = pdockq_scores[2]
+        # Erase pDockQ, interface_pLDDT, and n_interface_contacts for the
+        # models that are not the best
+        scores.loc[scores.index != self.model_rank[0],
+                    ['pDockQ', 'interface_pLDDT', 'n_interface_contacts']] = np.nan
+        
+        # Get ptm and plddt scores
+        ptms = {k: self.outs[k]['pTMscore'] for k in self.model_rank}
+        plddts = {k: self.outs[k]['pLDDT'] for k in self.model_rank}
+        scores['pTMscore'] = pd.Series(ptms)
+        scores['pLDDT'] = pd.Series(plddts)
+        
+        scores = scores[['pLDDT','iptms','pTMscore','iptm+ptm','pDockQ',
+                         'interface_pLDDT','n_interface_contacts']]
+        
+        scores.rename(columns={'iptm+ptm': 'ipTM*0.8+pTM*0.2',
+                               'pTMscore': 'pTM',
+                               'iptms': 'ipTM'}, inplace=True)
+        
+        # Create a `rank` column
+        ranks = {k: i for i,k in enumerate(self.model_rank)}
+        scores['rank'] = pd.Series(ranks)
+        scores.sort_values(by='rank', ascending=True, inplace=True)
+        
+        # Save to a file
+        scores.to_csv(self.out_model/'scores.csv')
+        
         
         if self.only_pae_interaction:
             # Calculate the minimum average PAE for the quadrants with
