@@ -415,13 +415,13 @@ class AlphaFold(Executor):
             logging.warning(f'Could not calculate pDockQ for {self.out_model}')
             pdockq_scores = (np.nan, np.nan, np.nan)
         
-        scores['pDockQ'] = pdockq_scores[0]
+        scores['pDockQ_or_mpDockQ'] = pdockq_scores[0]
         scores['interface_pLDDT'] = pdockq_scores[1]
         scores['n_interface_contacts'] = pdockq_scores[2]
         # Erase pDockQ, interface_pLDDT, and n_interface_contacts for the
         # models that are not the best
         scores.loc[scores.index != self.model_rank[0],
-                    ['pDockQ', 'interface_pLDDT', 'n_interface_contacts']] = np.nan
+                    ['pDockQ_or_mpDockQ', 'interface_pLDDT', 'n_interface_contacts']] = np.nan
         
         # Get ptm and plddt scores
         ptms = {k: self.outs[k]['pTMscore'] for k in self.model_rank}
@@ -429,7 +429,7 @@ class AlphaFold(Executor):
         scores['pTMscore'] = pd.Series(ptms)
         scores['pLDDT'] = pd.Series(plddts)
         
-        scores = scores[['pLDDT','iptms','pTMscore','iptm+ptm','pDockQ',
+        scores = scores[['pLDDT','iptms','pTMscore','iptm+ptm','pDockQ_or_mpDockQ',
                          'interface_pLDDT','n_interface_contacts']]
         
         scores.rename(columns={'iptm+ptm': 'ipTM*0.8+pTM*0.2',

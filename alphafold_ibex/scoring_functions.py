@@ -202,7 +202,8 @@ def score_complex(path_coords:Dict[str,List[List[float]]],
             #The first axis contains the contacts from chain 1
             #The second the contacts from chain 2
             if contacts.shape[0]>0:
-                av_if_plDDT = np.concatenate((chain_plddt[contacts[:,0]], int_chain_plddt[contacts[:,1]])).mean()
+                av_if_plDDT = np.concatenate((chain_plddt[contacts[:,0]],
+                                              int_chain_plddt[contacts[:,1]])).mean()
                 complex_score += np.log10(contacts.shape[0]+1)*av_if_plDDT
 
     return complex_score, len(chains)
@@ -223,7 +224,8 @@ def calculate_mpDockQ(complex_score:float) -> float:
     x_0 = 261.398
     k = 0.036
     b = 0.221
-    return L/(1+math.exp(-1*k*(complex_score-x_0))) + b
+    mpdockq = L/(1+math.exp(-1*k*(complex_score-x_0))) + b
+    return (mpdockq, np.nan, np.nan) # To match the output of the pdockq function
 
 
 def calc_pdockq(chain_coords:Dict[str,List[List[float]]],
