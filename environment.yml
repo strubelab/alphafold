@@ -34,3 +34,5 @@ dependencies:
   - bioconda::hmmer==3.3.2
   - bioconda::hhsuite==3.3.0
   - bioconda::kalign2==2.04
+  - setuptools==68.2.2
+
